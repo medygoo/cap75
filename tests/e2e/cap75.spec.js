@@ -33,6 +33,7 @@ test.describe('Compte et connexion', () => {
   test('refuse un e-mail déjà inscrit', async ({ page }) => {
     const email = await signUp(page);
     await page.getByRole('button', { name: 'Se déconnecter' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Connexion' })).toBeVisible();
     await signUp(page, { email, expect: null });
     await expect(page.getByRole('alert')).toContainText('existe déjà');
   });
