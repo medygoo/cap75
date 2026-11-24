@@ -1,0 +1,25 @@
+import { chromium } from 'playwright';
+const url = process.argv[2] || 'https://cap75.pages.dev/';
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, serviceWorkers: 'block' });
+const page = await ctx.newPage();
+const cdp = await ctx.newCDPSession(page);
+// Réseau « 3G lent » : 400 ms de latence, ~50 Ko/s
+await cdp.send('Network.enable');
+await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 400, downloadThroughput: 50 * 1024, uploadThroughput: 25 * 1024 });
+const files = [];
+page.on('response', async (r) => { try { const h = await r.headerValue('content-length'); files.push({ url: r.url().replace(/^https:\/\/[^/]+/, ''), status: r.status(), enc: await r.headerValue('content-encoding') }); } catch {} });
+const t0 = Date.now();
+await page.goto(url, { waitUntil: 'commit' });
+await page.waitForSelector('.auth-card, .app', { timeout: 120000 });
+const tAuth = Date.now() - t0;
+await page.waitForLoadState('load');
+const tLoad = Date.now() - t0;
+const res = await page.evaluate(() => performance.getEntriesByType('resource').map((e) => ({ n: e.name.replace(location.origin, ''), ko: Math.round(e.transferSize / 1024), brut: Math.round(e.decodedBodySize / 1024), ms: Math.round(e.duration) })));
+const nav = await page.evaluate(() => { const n = performance.getEntriesByType('navigation')[0]; return { ko: Math.round(n.transferSize / 1024), ms: Math.round(n.duration) }; });
+console.log('écran visible après', tAuth, 'ms | chargement complet', tLoad, 'ms');
+console.log('page HTML', JSON.stringify(nav));
+res.forEach((r) => console.log(String(r.ko).padStart(5), 'Ko transférés |', String(r.brut).padStart(5), 'Ko bruts |', String(r.ms).padStart(6), 'ms |', r.n));
+console.log('compression:', [...new Set(files.map((f) => f.enc || 'aucune'))].join(','));
+console.log('TOTAL transféré:', res.reduce((s, r) => s + r.ko, 0) + nav.ko, 'Ko');
+await browser.close();

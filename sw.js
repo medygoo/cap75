@@ -6,7 +6,7 @@
      hors ligne sont gérées par l'appli (cache local + file d'attente).
    ============================================================ */
 
-const VERSION = 'cap75-v3.1.1';
+const VERSION = 'cap75-v3.2.0';
 const SHELL = [
   './',
   './index.html',
@@ -18,11 +18,9 @@ const SHELL = [
   './js/finance.js',
   './js/data.js',
   './js/app.js',
+  // Les grandes icônes (512 px) ne servent qu'à l'installation : pas de préchargement
   './icons/icon.svg',
   './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/maskable-512.png',
-  './icons/apple-touch-icon.png',
   './icons/favicon.ico'
 ];
 
