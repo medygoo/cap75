@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carnet de Budget - DOXTEHAD</title>
+    <!-- Tailwind CSS (Utilisation des utilitaires complets sans dépendance externe à l'exécution) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#0A2540',
+                            900: '#061729',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        /* Masquer la barre de défilement tout en gardant le défilement horizontal */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between bg-slate-100 text-slate-800 antialiased">
+
+    <!-- MAIN WRAPPER -->
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- HEADER -->
+        <header class="bg-navy-800 text-white shadow-md sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <!-- SVG Wallet Icon -->
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold tracking-wide">DOXTEHAD</h1>
+                            <p class="text-xs text-blue-200">Carnet de Budget Auto-Hébergé & Autonome</p>
+                        </div>
+                    </div>
+
+                    <!-- Header Quick Actions -->
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportDataJSON()" title="Sauvegarder les données (JSON)" class="flex items-center space-x-1.5 text-xs bg-navy-900 hover:bg-slate-800 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span class="hidden md:inline">Sauvegarde JSON</span>
+                        </button>
+                        <label title="Restaurer un fichier JSON" class="flex items-center space-x-1.5 text-xs bg-navy-900 hover:bg-slate-800 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer transition">
+                            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            <span class="hidden md:inline">Restauration</span>
+                            <input type="file" id="jsonInput" class="hidden" accept=".json" onchange="importDataJSON(event)">
+                        </label>
+                        <button onclick="confirmResetAll()" title="Réinitialiser l'application" class="flex items-center space-x-1 text-xs bg-red-900/60 hover:bg-red-800 text-red-200 px-2.5 py-1.5 rounded-lg border border-red-700 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        <button onclick="lockApp()" title="Verrouiller l'application" class="flex items-center space-x-1.5 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-2.5 py-1.5 rounded-lg border border-amber-500/40 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span class="hidden sm:inline">Verrouiller</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NAVIGATION TABS -->
+                <nav class="flex space-x-1 overflow-x-auto no-scrollbar border-t border-slate-700/60 pt-1 pb-1">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center space-x-2 whitespace-nowrap bg-white text-navy-800">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        <span>Accueil</span>
+                    </button>
+                    <button onclick="switchTab('operations')" id="tab-operations" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center space-x-2 whitespace-nowrap text-slate-300 hover:text-white hover:bg-navy-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        <span>Opérations</span>
+                    </button>
+                    <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center space-x-2 whitespace-nowrap text-slate-300 hover:text-white hover:bg-navy-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Projets & Portefeuille</span>
+                    </button>
+                    <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center space-x-2 whitespace-nowrap text-slate-300 hover:text-white hover:bg-navy-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                        </svg>
+                        <span>Rapports</span>
+                    </button>
+                    <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center space-x-2 whitespace-nowrap text-slate-300 hover:text-white hover:bg-navy-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Prévisions & Sécurité</span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+
+            <!-- PAGE: ACCUEIL / DASHBOARD -->
+            <section id="page-dashboard" class="space-y-6">
+                <!-- Main KPI Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Revenus Card -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Revenus du mois</span>
+                            <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-900 mt-2" id="kpi-revenus">0.00 $US</p>
+                        <p class="text-xs text-slate-500 mt-1">Total des entrées enregistrées</p>
+                    </div>
+
+                    <!-- Dépenses Card -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Dépenses</span>
+                            <div class="p-2 bg-rose-50 rounded-lg text-rose-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-900 mt-2" id="kpi-depenses">0.00 $US</p>
+                        <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                            <div id="bar-depenses" class="bg-rose-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>Part des revenus</span>
+                            <span id="pct-depenses">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Projets Card -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Projets</span>
+                            <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-900 mt-2" id="kpi-projets">0.00 $US</p>
+                        <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                            <div id="bar-projets" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>Part des revenus</span>
+                            <span id="pct-projets">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Épargne Card -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Épargne Réelle</span>
+                            <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-900 mt-2" id="kpi-epargne">0.00 $US</p>
+                        <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                            <div id="bar-epargne" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>Part des revenus</span>
+                            <span id="pct-epargne">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benchmarks Section: "Vos repères en valeur" -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-navy-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span>Vos repères en valeur (Règles Budgétaires recommandées)</span>
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Threshold 1: Dépenses Max 75% -->
+                        <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 relative" id="card-repere-depenses">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-500 uppercase">Plafond Dépenses Max (75%)</p>
+                                    <p class="text-xl font-bold text-slate-800 mt-1" id="val-max-depenses">0.00 $US</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded font-semibold bg-slate-200 text-slate-700" id="status-depenses">75% Max</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2">Dépenses actuelles : <span id="actual-depenses-text" class="font-semibold">0.00 $US</span></p>
+                            <div id="alert-depenses-box" class="hidden mt-3 p-2 bg-rose-100 border border-rose-300 text-rose-800 text-xs rounded">
+                                Attention: Dépenses dépassent le seuil de 75%!
+                            </div>
+                        </div>
+
+                        <!-- Threshold 2: Projets Max 15% -->
+                        <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 relative" id="card-repere-projets">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-500 uppercase">Objectif Projets (15%)</p>
+                                    <p class="text-xl font-bold text-slate-800 mt-1" id="val-max-projets">0.00 $US</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded font-semibold bg-blue-100 text-blue-700" id="status-projets">15% Cible</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2">Projets actuels : <span id="actual-projets-text" class="font-semibold">0.00 $US</span></p>
+                            <div id="alert-projets-box" class="hidden mt-3 p-2 bg-amber-100 border border-amber-300 text-amber-800 text-xs rounded">
+                                Allocation projet dépasse la recommandation de 15%.
+                            </div>
+                        </div>
+
+                        <!-- Threshold 3: Épargne Minimale 10% -->
+                        <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 relative" id="card-repere-epargne">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-500 uppercase">Épargne Minimale (10%)</p>
+                                    <p class="text-xl font-bold text-slate-800 mt-1" id="val-min-epargne">0.00 $US</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded font-semibold bg-amber-100 text-amber-700" id="status-epargne">10% Min</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2">Épargne actuelle : <span id="actual-epargne-text" class="font-semibold">0.00 $US</span></p>
+                            <div id="alert-epargne-box" class="hidden mt-3 p-2 bg-rose-100 border border-rose-300 text-rose-800 text-xs rounded">
+                                Épargne sous le seuil minimal de 10%!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Preview -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-800">Dernières Opérations</h2>
+                        <button onclick="switchTab('operations')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center space-x-1">
+                            <span>Voir tout</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Catégorie</th>
+                                    <th class="p-3">Description</th>
+                                    <th class="p-3 text-right">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-ops-tbody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-slate-400">Aucune opération enregistrée pour le moment.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PAGE: OPERATIONS -->
+            <section id="page-operations" class="hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Gestion des Opérations</h2>
+                        <p class="text-xs text-slate-500">Ajoutez, modifiez ou supprimez toutes vos transactions budgétaires.</p>
+                    </div>
+                    <button onclick="openOperationModal()" class="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Nouvelle Opération</span>
+                    </button>
+                </div>
+
+                <!-- Filter Controls -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold text-slate-600">Filtrer par type :</span>
+                        <select id="filter-type" onchange="renderOperationsTable()" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50">
+                            <option value="ALL">Tous les types</option>
+                            <option value="Revenu">Revenu</option>
+                            <option value="Dépense">Dépense</option>
+                            <option value="Projet">Projet</option>
+                            <option value="Épargne">Épargne</option>
+                        </select>
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        Total opérations: <span id="ops-count" class="font-bold text-slate-800">0</span>
+                    </div>
+                </div>
+
+                <!-- Full Operations Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 font-semibold">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Catégorie</th>
+                                    <th class="p-3">Description</th>
+                                    <th class="p-3 text-right">Montant</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="full-ops-tbody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="6" class="p-6 text-center text-slate-400">Aucune donnée disponible. Cliquez sur "Nouvelle Opération" pour commencer.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PAGE: PROJECTS -->
+            <section id="page-projects" class="hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Gestion Professionnelle de Portefeuille Projets</h2>
+                        <p class="text-xs text-slate-500">Planification SMART, objectifs d'investissement et suivi des échéances financières.</p>
+                    </div>
+                    <button onclick="openProjectModal()" class="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Nouveau Projet SMART</span>
+                    </button>
+                </div>
+
+                <!-- Professional Portfolio Metrics Summary -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Objectif Total Cible</span>
+                        <p class="text-xl font-bold text-slate-900 mt-1" id="proj-kpi-target">0.00 $US</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Capital global à mobiliser</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Capital Mobilisé</span>
+                        <p class="text-xl font-bold text-blue-900 mt-1" id="proj-kpi-saved">0.00 $US</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Épargne actuelle allouée</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Taux d'Avancement</span>
+                        <p class="text-xl font-bold text-emerald-900 mt-1" id="proj-kpi-pct">0.0%</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Réalisation moyenne du portefeuille</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Effort Mensuel Estimé</span>
+                        <p class="text-xl font-bold text-amber-900 mt-1" id="proj-kpi-monthly">0.00 $US / mois</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Saisie requise pour atteindre les échéances</p>
+                    </div>
+                </div>
+
+                <!-- Portfolio Filters & Controls -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs font-semibold text-slate-600">Catégorie :</span>
+                            <select id="proj-filter-category" onchange="renderProjectsGrid()" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="ALL">Toutes les catégories</option>
+                                <option value="Investissement">Investissement</option>
+                                <option value="Immobilier">Immobilier</option>
+                                <option value="Équipement / Matériel">Équipement / Matériel</option>
+                                <option value="Réserve d'Urgence">Réserve d'Urgence</option>
+                                <option value="Formation">Formation / Développement</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs font-semibold text-slate-600">Statut :</span>
+                            <select id="proj-filter-status" onchange="renderProjectsGrid()" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="ALL">Tous les statuts</option>
+                                <option value="En cours">En cours</option>
+                                <option value="Atteint">Atteint</option>
+                                <option value="En pause">En pause</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        Projets actifs : <span id="projects-count" class="font-bold text-slate-800">0</span>
+                    </div>
+                </div>
+
+                <!-- Projects Cards Grid -->
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="col-span-full p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
+                        Aucun projet en cours. Créez votre premier projet financier !
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PAGE: REPORTS -->
+            <section id="page-reports" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Rapports & Analyses Autonomes</h2>
+                    <p class="text-xs text-slate-500">Visualisez la répartition de vos revenus et l'équilibre budgétaire via l'analyseur graphique natif.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Custom Native Canvas Doughnut -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-4 text-center">Répartition Générale des Ressources</h3>
+                        <div class="w-full flex justify-center items-center h-64">
+                            <canvas id="custom-pie-canvas" width="260" height="260" class="max-w-full h-auto"></canvas>
+                        </div>
+                        <!-- Canvas Legend -->
+                        <div class="flex flex-wrap justify-center gap-3 mt-4 text-xs">
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span><span>Dépenses</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span><span>Projets</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span><span>Épargne</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span><span>Disponible</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-800">Analyse de la Règle 75/15/10</h3>
+                        
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <div class="flex justify-between font-medium mb-1">
+                                    <span>Dépenses (Recommandé: &le; 75%)</span>
+                                    <span id="rep-depense-pct">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div id="rep-depense-bar" class="bg-rose-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between font-medium mb-1">
+                                    <span>Projets (Recommandé: &le; 15%)</span>
+                                    <span id="rep-projet-pct">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div id="rep-projet-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between font-medium mb-1">
+                                    <span>Épargne (Recommandé: &ge; 10%)</span>
+                                    <span id="rep-epargne-pct">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div id="rep-epargne-bar" class="bg-amber-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-2">
+                            <p class="font-semibold text-slate-700">Synthèse du Solde :</p>
+                            <p class="text-slate-600">Revenus totaux : <span id="rep-total-rev" class="font-bold">0.00 $US</span></p>
+                            <p class="text-slate-600">Engagements totaux : <span id="rep-total-eng" class="font-bold">0.00 $US</span></p>
+                            <p class="text-slate-600">Solde non alloué : <span id="rep-total-dispo" class="font-bold text-emerald-600">0.00 $US</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PAGE: PREVISIONS & SETTINGS -->
+            <section id="page-settings" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Prévisions & Sécurité Administrateur</h2>
+                    <p class="text-xs text-slate-500">Paramètres de sécurité, mot de passe administrateur et sauvegardes.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Admin Password Settings -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex items-center space-x-2 text-navy-800">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <h3 class="text-sm font-bold">Sécurité du Mot de Passe Administrateur</h3>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+                            <p class="text-slate-600">Statut du mot de passe : <span id="pwd-status" class="font-semibold text-emerald-600">Actif</span></p>
+                            <p class="text-slate-600">Date de dernière mise à jour : <span id="pwd-last-date" class="font-medium">-</span></p>
+                            <p class="text-slate-600">Jours de validité restants : <span id="pwd-remaining-days" class="font-bold text-blue-600">-</span> / 180 jours (6 mois)</p>
+                        </div>
+
+                        <button onclick="lockApp()" class="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2 rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span>Verrouiller l'application maintenant</span>
+                        </button>
+
+                        <form id="form-change-password" onsubmit="handlePasswordChange(event)" class="space-y-3 pt-2 border-t border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-700">Changer le mot de passe</h4>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Mot de passe actuel</label>
+                                <input type="password" id="change-old-pwd" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Nouveau mot de passe</label>
+                                <input type="password" id="change-new-pwd" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Confirmer le nouveau mot de passe</label>
+                                <input type="password" id="change-confirm-pwd" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            </div>
+                            <button type="submit" class="w-full bg-navy-800 hover:bg-navy-900 text-white text-xs font-semibold py-2 rounded-lg transition">
+                                Mettre à jour le mot de passe
+                            </button>
+                        </form>
+
+                        <div class="pt-2 border-t border-slate-100">
+                            <button onclick="simulateExpiration()" class="text-xs text-rose-600 hover:underline font-medium">
+                                [Test] Simuler l'expiration de 6 mois
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Backup & Data Controls -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex items-center space-x-2 text-navy-800">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                            </svg>
+                            <h3 class="text-sm font-bold">Gestion des Données JSON</h3>
+                        </div>
+
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Pour éviter toute perte de saisie, vous pouvez exporter une sauvegarde intégrale de l'application au format JSON, la restaurer sur un autre appareil ou réinitialiser le carnet de budget.
+                        </p>
+
+                        <div class="space-y-3 pt-2">
+                            <button onclick="exportDataJSON()" class="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2.5 rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Sauvegarder JSON</span>
+                            </button>
+
+                            <label class="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 rounded-lg transition cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span>Restaurer JSON</span>
+                                <input type="file" class="hidden" accept=".json" onchange="importDataJSON(event)">
+                            </label>
+
+                            <button onclick="confirmResetAll()" class="w-full flex items-center justify-center space-x-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold py-2.5 rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Réinitialiser toutes les données</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+            <p>Carnet de Budget - DOXTEHAD &copy; 2026 - Tous droits réservés.</p>
+        </footer>
+    </div>
+
+
+    <!-- MODAL: OPERATION (Create / Edit) -->
+    <div id="modal-operation" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div class="bg-navy-800 px-5 py-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm" id="modal-op-title">Nouvelle Opération</h3>
+                <button onclick="closeModal('modal-operation')" class="text-slate-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="form-operation" onsubmit="saveOperation(event)" class="p-5 space-y-4">
+                <input type="hidden" id="op-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Type d'opération</label>
+                    <select id="op-type" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
+                        <option value="Revenu">Revenu</option>
+                        <option value="Dépense">Dépense</option>
+                        <option value="Projet">Projet</option>
+                        <option value="Épargne">Épargne</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Catégorie</label>
+                    <input type="text" id="op-category" placeholder="ex: Salaire, Loyer, Transport, Épargne secours" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                    <input type="text" id="op-desc" placeholder="Détails de l'opération" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Montant ($US)</label>
+                        <input type="number" id="op-amount" step="0.01" min="0.01" placeholder="0.00" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Date</label>
+                        <input type="date" id="op-date" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-operation')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Annuler</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-navy-800 hover:bg-navy-900 rounded-lg">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MODAL: PROJECT (Create / Edit) -->
+    <div id="modal-project" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div class="bg-navy-800 px-5 py-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm" id="modal-proj-title">Nouveau Projet SMART</h3>
+                <button onclick="closeModal('modal-project')" class="text-slate-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="form-project" onsubmit="saveProject(event)" class="p-5 space-y-4">
+                <input type="hidden" id="proj-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Intitulé du Projet</label>
+                    <input type="text" id="proj-title-input" placeholder="ex: Fonds de roulement, Achat véhicule..." required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Catégorie</label>
+                        <select id="proj-category" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
+                            <option value="Investissement">Investissement</option>
+                            <option value="Immobilier">Immobilier</option>
+                            <option value="Équipement / Matériel">Équipement / Matériel</option>
+                            <option value="Réserve d'Urgence">Réserve d'Urgence</option>
+                            <option value="Formation">Formation / Développement</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Niveau de Priorité</label>
+                        <select id="proj-priority" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
+                            <option value="Haute">Haute 🔥</option>
+                            <option value="Moyenne" selected>Moyenne ⚡</option>
+                            <option value="Basse">Basse 🌱</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Objectif Cible ($US)</label>
+                        <input type="number" id="proj-target" step="0.01" min="0.01" placeholder="5000.00" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Capital Actuel ($US)</label>
+                        <input type="number" id="proj-saved" step="0.01" min="0" placeholder="0.00" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Date d'échéance</label>
+                        <input type="date" id="proj-deadline" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Statut du Projet</label>
+                        <select id="proj-status" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
+                            <option value="En cours">En cours</option>
+                            <option value="Atteint">Atteint 🎉</option>
+                            <option value="En pause">En pause ⏸️</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-project')" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Annuler</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-navy-800 hover:bg-navy-900 rounded-lg">Enregistrer le Projet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: QUICK CONTRIBUTION TO PROJECT -->
+    <div id="modal-project-contribution" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+            <div class="bg-blue-900 px-5 py-3.5 text-white flex justify-between items-center">
+                <h3 class="font-bold text-xs" id="modal-contrib-title">Alimenter le Projet</h3>
+                <button onclick="closeModal('modal-project-contribution')" class="text-slate-300 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="form-project-contribution" onsubmit="saveProjectContribution(event)" class="p-4 space-y-3">
+                <input type="hidden" id="contrib-proj-id">
+                <p class="text-xs text-slate-600" id="contrib-proj-name">Projet : -</p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Montant à ajouter ($US)</label>
+                    <input type="number" id="contrib-amount" step="0.01" min="0.01" placeholder="100.00" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-project-contribution')" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg">Annuler</button>
+                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Confirmer l'ajout</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MODAL: ADMIN AUTH / EXPIRED / INITIALIZATION / LOGIN -->
+    <div id="modal-admin-auth" class="fixed inset-0 bg-navy-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div class="bg-navy-800 p-6 text-center text-white">
+                <div class="w-12 h-12 bg-blue-600/30 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-400">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold" id="admin-modal-heading">Authentification Administrateur</h3>
+                <p class="text-xs text-blue-200 mt-1" id="admin-modal-subtext">Sécurité DOXTEHAD - Accès restreint</p>
+            </div>
+
+            <div class="p-6">
+                <!-- State 1: First time setup -->
+                <form id="form-init-pwd" onsubmit="handleInitPassword(event)" class="space-y-4 hidden">
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                        Première utilisation : veuillez créer un mot de passe administrateur pour sécuriser l'application.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Créer le mot de passe</label>
+                        <input type="password" id="init-pwd" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Confirmer le mot de passe</label>
+                        <input type="password" id="init-pwd-confirm" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 rounded-lg transition">
+                        Définir le mot de passe et ouvrir l'application
+                    </button>
+                </form>
+
+                <!-- State 2: Mandatory Startup Login -->
+                <form id="form-login-pwd" onsubmit="handleLogin(event)" class="space-y-4 hidden">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
+                        Veuillez saisir votre mot de passe pour déverrouiller votre Carnet de Budget.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Mot de passe Administrateur</label>
+                        <input type="password" id="login-pwd" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg" autofocus>
+                    </div>
+                    <button type="submit" class="w-full bg-navy-800 hover:bg-navy-900 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                        </svg>
+                        <span>Déverrouiller l'application</span>
+                    </button>
+                </form>
+
+                <!-- State 3: Expired Password Force Change -->
+                <form id="form-expired-pwd" onsubmit="handleExpiredPasswordChange(event)" class="space-y-4 hidden">
+                    <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                        Mot de passe administrateur expiré (180 jours / 6 mois écoulés). Vous devez le renouveler obligatoirement pour déverrouiller l'accès.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ancien mot de passe</label>
+                        <input type="password" id="exp-old-pwd" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nouveau mot de passe</label>
+                        <input type="password" id="exp-new-pwd" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Confirmer nouveau mot de passe</label>
+                        <input type="password" id="exp-confirm-pwd" minlength="4" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold py-2.5 rounded-lg transition">
+                        Renouveler le mot de passe et déverrouiller
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- APPLICATION LOGIC JS -->
+    <script>
+        // GLOBAL STATE
+        let appState = {
+            operations: [],
+            projects: [],
+            adminPasswordHash: null,
+            passwordSetDate: null
+        };
+
+        let isAuthenticated = false;
+
+        // CONSTANTS
+        const STORAGE_KEY = 'DOXTEHAD_BUDGET_APP_DATA';
+        const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000; // 180 days
+
+        // INITIALIZATION
+        window.onload = function() {
+            loadState();
+            checkAdminAuth();
+            if (isAuthenticated) {
+                renderAll();
+            }
+        };
+
+        // LOAD & SAVE STATE
+        function loadState() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    appState = JSON.parse(stored);
+                } catch (e) {
+                    console.error("Error loading stored state", e);
+                }
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            if (isAuthenticated) {
+                renderAll();
+            }
+        }
+
+        // ADMIN SECURITY, LOGIN & EXPIRATION CHECK
+        function checkAdminAuth() {
+            const authModal = document.getElementById('modal-admin-auth');
+            const initForm = document.getElementById('form-init-pwd');
+            const loginForm = document.getElementById('form-login-pwd');
+            const expForm = document.getElementById('form-expired-pwd');
+
+            if (!authModal || !initForm || !loginForm || !expForm) {
+                console.error("Auth elements not found in DOM");
+                return;
+            }
+
+            initForm.classList.add('hidden');
+            loginForm.classList.add('hidden');
+            expForm.classList.add('hidden');
+
+            // Case 1: First launch (No Password Set)
+            if (!appState.adminPasswordHash) {
+                isAuthenticated = false;
+                authModal.classList.remove('hidden');
+                initForm.classList.remove('hidden');
+                document.getElementById('admin-modal-heading').innerText = "Initialisation de la Sécurité";
+                document.getElementById('admin-modal-subtext').innerText = "Création du premier mot de passe administrateur";
+                return;
+            }
+
+            // Case 2: Not Logged in yet at Startup / Locked State
+            if (!isAuthenticated) {
+                authModal.classList.remove('hidden');
+                loginForm.classList.remove('hidden');
+                document.getElementById('admin-modal-heading').innerText = "Connexion Administrateur";
+                document.getElementById('admin-modal-subtext').innerText = "Veuillez déverrouiller l'accès";
+                return;
+            }
+
+            // Case 3: Logged in
+            authModal.classList.add('hidden');
+        }
+
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return hash.toString();
+        }
+
+        function handleInitPassword(e) {
+            e.preventDefault();
+            const pwd = document.getElementById('init-pwd').value;
+            const confirmPwd = document.getElementById('init-pwd-confirm').value;
+
+            if (pwd !== confirmPwd) {
+                alert("Les mots de passe ne correspondent pas.");
+                return;
+            }
+
+            appState.adminPasswordHash = simpleHash(pwd);
+            appState.passwordSetDate = new Date().toISOString();
+            isAuthenticated = true;
+            saveState();
+            checkAdminAuth();
+            renderAll();
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pwdInput = document.getElementById('login-pwd').value;
+            const hashedInput = simpleHash(pwdInput);
+
+            if (hashedInput !== appState.adminPasswordHash) {
+                alert("Mot de passe incorrect.");
+                document.getElementById('login-pwd').value = '';
+                return;
+            }
+
+            // Check if 6 months (180 days) expired
+            const setDate = new Date(appState.passwordSetDate).getTime();
+            const now = new Date().getTime();
+
+            if (now - setDate > SIX_MONTHS_MS) {
+                // Show expired password prompt
+                document.getElementById('form-login-pwd').classList.add('hidden');
+                document.getElementById('form-expired-pwd').classList.remove('hidden');
+                document.getElementById('admin-modal-heading').innerText = "Mot de Passe Expiré";
+                document.getElementById('admin-modal-subtext').innerText = "Renouvellement obligatoire de 6 mois";
+                return;
+            }
+
+            // Authentication successful
+            isAuthenticated = true;
+            document.getElementById('login-pwd').value = '';
+            checkAdminAuth();
+            renderAll();
+        }
+
+        function handleExpiredPasswordChange(e) {
+            e.preventDefault();
+            const oldPwd = document.getElementById('exp-old-pwd').value;
+            const newPwd = document.getElementById('exp-new-pwd').value;
+            const confirmPwd = document.getElementById('exp-confirm-pwd').value;
+
+            if (simpleHash(oldPwd) !== appState.adminPasswordHash) {
+                alert("L'ancien mot de passe est incorrect.");
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                alert("Le nouveau mot de passe et sa confirmation ne correspondent pas.");
+                return;
+            }
+
+            appState.adminPasswordHash = simpleHash(newPwd);
+            appState.passwordSetDate = new Date().toISOString();
+            isAuthenticated = true;
+            saveState();
+            checkAdminAuth();
+            renderAll();
+            alert("Mot de passe renouvelé avec succès ! Connexion réussie.");
+        }
+
+        function lockApp() {
+            isAuthenticated = false;
+            checkAdminAuth();
+        }
+
+        function handlePasswordChange(e) {
+            e.preventDefault();
+            const oldPwd = document.getElementById('change-old-pwd').value;
+            const newPwd = document.getElementById('change-new-pwd').value;
+            const confirmPwd = document.getElementById('change-confirm-pwd').value;
+
+            if (simpleHash(oldPwd) !== appState.adminPasswordHash) {
+                alert("Mot de passe actuel incorrect.");
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                alert("Le nouveau mot de passe ne correspond pas.");
+                return;
+            }
+
+            appState.adminPasswordHash = simpleHash(newPwd);
+            appState.passwordSetDate = new Date().toISOString();
+            saveState();
+            document.getElementById('form-change-password').reset();
+            alert("Mot de passe mis à jour avec succès.");
+        }
+
+        function simulateExpiration() {
+            const pastDate = new Date();
+            pastDate.setDate(pastDate.getDate() - 200);
+            appState.passwordSetDate = pastDate.toISOString();
+            saveState();
+            lockApp();
+        }
+
+        // MAIN RENDER ENGINE
+        function renderAll() {
+            // Calculations
+            const totalRevenus = appState.operations.filter(o => o.type === 'Revenu').reduce((s, o) => s + parseFloat(o.amount), 0);
+            const totalDepenses = appState.operations.filter(o => o.type === 'Dépense').reduce((s, o) => s + parseFloat(o.amount), 0);
+            const totalProjetsOps = appState.operations.filter(o => o.type === 'Projet').reduce((s, o) => s + parseFloat(o.amount), 0);
+            const totalEpargneOps = appState.operations.filter(o => o.type === 'Épargne').reduce((s, o) => s + parseFloat(o.amount), 0);
+
+            // Dashboard KPIs
+            document.getElementById('kpi-revenus').innerText = formatCurrency(totalRevenus);
+            document.getElementById('kpi-depenses').innerText = formatCurrency(totalDepenses);
+            document.getElementById('kpi-projets').innerText = formatCurrency(totalProjetsOps);
+            document.getElementById('kpi-epargne').innerText = formatCurrency(totalEpargneOps);
+
+            // Percentages relative to total Revenus
+            const depPct = totalRevenus > 0 ? (totalDepenses / totalRevenus * 100) : 0;
+            const projPct = totalRevenus > 0 ? (totalProjetsOps / totalRevenus * 100) : 0;
+            const eparPct = totalRevenus > 0 ? (totalEpargneOps / totalRevenus * 100) : 0;
+
+            document.getElementById('bar-depenses').style.width = Math.min(depPct, 100) + '%';
+            document.getElementById('bar-projets').style.width = Math.min(projPct, 100) + '%';
+            document.getElementById('bar-epargne').style.width = Math.min(eparPct, 100) + '%';
+
+            document.getElementById('pct-depenses').innerText = depPct.toFixed(1) + '%';
+            document.getElementById('pct-projets').innerText = projPct.toFixed(1) + '%';
+            document.getElementById('pct-epargne').innerText = eparPct.toFixed(1) + '%';
+
+            // Benchmarks Rules Calculation (75%, 15%, 10%)
+            const valMaxDepenses = totalRevenus * 0.75;
+            const valMaxProjets = totalRevenus * 0.15;
+            const valMinEpargne = totalRevenus * 0.10;
+
+            document.getElementById('val-max-depenses').innerText = formatCurrency(valMaxDepenses);
+            document.getElementById('val-max-projets').innerText = formatCurrency(valMaxProjets);
+            document.getElementById('val-min-epargne').innerText = formatCurrency(valMinEpargne);
+
+            document.getElementById('actual-depenses-text').innerText = formatCurrency(totalDepenses);
+            document.getElementById('actual-projets-text').innerText = formatCurrency(totalProjetsOps);
+            document.getElementById('actual-epargne-text').innerText = formatCurrency(totalEpargneOps);
+
+            // Threshold warnings toggle
+            document.getElementById('alert-depenses-box').classList.toggle('hidden', totalDepenses <= valMaxDepenses || totalRevenus === 0);
+            document.getElementById('alert-projets-box').classList.toggle('hidden', totalProjetsOps <= valMaxProjets || totalRevenus === 0);
+            document.getElementById('alert-epargne-box').classList.toggle('hidden', totalEpargneOps >= valMinEpargne || totalRevenus === 0);
+
+            // Tables & Views
+            renderRecentOperations();
+            renderOperationsTable();
+            renderProjectsGrid();
+            renderReports(totalRevenus, totalDepenses, totalProjetsOps, totalEpargneOps, depPct, projPct, eparPct);
+
+            // Admin Settings info
+            renderSettingsInfo();
+        }
+
+        function formatCurrency(val) {
+            return (val || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $US';
+        }
+
+
+        // OPERATIONS MANAGEMENT
+        function renderRecentOperations() {
+            const tbody = document.getElementById('recent-ops-tbody');
+            const recent = [...appState.operations].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Aucune opération enregistrée pour le moment.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recent.map(o => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${o.date}</td>
+                    <td class="p-3">${getTypeBadge(o.type)}</td>
+                    <td class="p-3 font-medium">${escapeHTML(o.category)}</td>
+                    <td class="p-3 text-slate-500">${escapeHTML(o.description || '-')}</td>
+                    <td class="p-3 text-right font-bold ${o.type === 'Revenu' ? 'text-emerald-600' : 'text-slate-800'}">${o.type === 'Revenu' ? '+' : '-'}${formatCurrency(o.amount)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderOperationsTable() {
+            const tbody = document.getElementById('full-ops-tbody');
+            const filterType = document.getElementById('filter-type').value;
+
+            let filtered = appState.operations;
+            if (filterType !== 'ALL') {
+                filtered = filtered.filter(o => o.type === filterType);
+            }
+
+            document.getElementById('ops-count').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Aucune donnée trouvée.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.sort((a,b) => new Date(b.date) - new Date(a.date)).map(o => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${o.date}</td>
+                    <td class="p-3">${getTypeBadge(o.type)}</td>
+                    <td class="p-3 font-semibold text-slate-800">${escapeHTML(o.category)}</td>
+                    <td class="p-3 text-slate-500">${escapeHTML(o.description || '-')}</td>
+                    <td class="p-3 text-right font-bold ${o.type === 'Revenu' ? 'text-emerald-600' : 'text-slate-800'}">${o.type === 'Revenu' ? '+' : '-'}${formatCurrency(o.amount)}</td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="openOperationModal('${o.id}')" class="p-1 text-blue-600 hover:text-blue-800 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <button onclick="deleteOperation('${o.id}')" class="p-1 text-rose-600 hover:text-rose-800 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getTypeBadge(type) {
+            const map = {
+                'Revenu': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                'Dépense': 'bg-rose-100 text-rose-800 border-rose-200',
+                'Projet': 'bg-blue-100 text-blue-800 border-blue-200',
+                'Épargne': 'bg-amber-100 text-amber-800 border-amber-200'
+            };
+            return `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${map[type] || 'bg-slate-100'}">${type}</span>`;
+        }
+
+        function openOperationModal(id = null) {
+            const modal = document.getElementById('modal-operation');
+            const form = document.getElementById('form-operation');
+            form.reset();
+
+            if (id) {
+                const op = appState.operations.find(o => o.id === id);
+                if (op) {
+                    document.getElementById('modal-op-title').innerText = "Modifier l'Opération";
+                    document.getElementById('op-id').value = op.id;
+                    document.getElementById('op-type').value = op.type;
+                    document.getElementById('op-category').value = op.category;
+                    document.getElementById('op-desc').value = op.description || '';
+                    document.getElementById('op-amount').value = op.amount;
+                    document.getElementById('op-date').value = op.date;
+                }
+            } else {
+                document.getElementById('modal-op-title').innerText = "Nouvelle Opération";
+                document.getElementById('op-id').value = '';
+                document.getElementById('op-date').value = new Date().toISOString().split('T')[0];
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function saveOperation(e) {
+            e.preventDefault();
+            const id = document.getElementById('op-id').value;
+            const opData = {
+                id: id || 'op_' + Date.now(),
+                type: document.getElementById('op-type').value,
+                category: document.getElementById('op-category').value.trim(),
+                description: document.getElementById('op-desc').value.trim(),
+                amount: parseFloat(document.getElementById('op-amount').value),
+                date: document.getElementById('op-date').value
+            };
+
+            if (id) {
+                const idx = appState.operations.findIndex(o => o.id === id);
+                if (idx !== -1) appState.operations[idx] = opData;
+            } else {
+                appState.operations.push(opData);
+            }
+
+            saveState();
+            closeModal('modal-operation');
+        }
+
+        function deleteOperation(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette opération ?")) {
+                appState.operations = appState.operations.filter(o => o.id !== id);
+                saveState();
+            }
+        }
+
+
+        // PROJECTS MANAGEMENT
+        function renderProjectsGrid() {
+            const grid = document.getElementById('projects-grid');
+            const catFilter = document.getElementById('proj-filter-category').value;
+            const statusFilter = document.getElementById('proj-filter-status').value;
+
+            let projects = appState.projects;
+
+            if (catFilter !== 'ALL') {
+                projects = projects.filter(p => (p.category || 'Autre') === catFilter);
+            }
+            if (statusFilter !== 'ALL') {
+                projects = projects.filter(p => (p.status || 'En cours') === statusFilter);
+            }
+
+            document.getElementById('projects-count').innerText = projects.length;
+
+            const totalTarget = appState.projects.reduce((s, p) => s + parseFloat(p.target || 0), 0);
+            const totalSaved = appState.projects.reduce((s, p) => s + parseFloat(p.saved || 0), 0);
+            const globalPct = totalTarget > 0 ? (totalSaved / totalTarget * 100) : 0;
+
+            let totalMonthlyNeeded = 0;
+            const today = new Date();
+
+            appState.projects.forEach(p => {
+                if ((p.status || 'En cours') !== 'Atteint') {
+                    const remaining = Math.max(0, p.target - p.saved);
+                    if (remaining > 0 && p.deadline) {
+                        const dead = new Date(p.deadline);
+                        const diffMonths = (dead.getFullYear() - today.getFullYear()) * 12 + (dead.getMonth() - today.getMonth());
+                        const monthsLeft = Math.max(1, diffMonths);
+                        totalMonthlyNeeded += (remaining / monthsLeft);
+                    }
+                }
+            });
+
+            document.getElementById('proj-kpi-target').innerText = formatCurrency(totalTarget);
+            document.getElementById('proj-kpi-saved').innerText = formatCurrency(totalSaved);
+            document.getElementById('proj-kpi-pct').innerText = globalPct.toFixed(1) + '%';
+            document.getElementById('proj-kpi-monthly').innerText = formatCurrency(totalMonthlyNeeded) + ' / mo';
+
+            if (projects.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
+                        Aucun projet trouvé avec les critères sélectionnés.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = projects.map(p => {
+                const target = parseFloat(p.target || 0);
+                const saved = parseFloat(p.saved || 0);
+                const pct = target > 0 ? Math.min((saved / target * 100), 100) : 0;
+                const remaining = Math.max(0, target - saved);
+                const status = p.status || 'En cours';
+                const category = p.category || 'Autre';
+                const priority = p.priority || 'Moyenne';
+
+                let monthsLeftText = '-';
+                let monthlyEffort = 0;
+                if (p.deadline) {
+                    const dead = new Date(p.deadline);
+                    const diffMonths = (dead.getFullYear() - today.getFullYear()) * 12 + (dead.getMonth() - today.getMonth());
+                    if (diffMonths > 0) {
+                        monthsLeftText = `${diffMonths} mois restant(s)`;
+                        monthlyEffort = remaining / diffMonths;
+                    } else if (diffMonths === 0) {
+                        monthsLeftText = `Ce mois-ci !`;
+                        monthlyEffort = remaining;
+                    } else {
+                        monthsLeftText = `Échéance dépassée`;
+                        monthlyEffort = remaining;
+                    }
+                }
+
+                const priorityBadge = priority === 'Haute' 
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-700 rounded border border-rose-200">Priorité Haute 🔥</span>'
+                    : priority === 'Moyenne'
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 rounded border border-amber-200">Priorité Moyenne ⚡</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 rounded border border-slate-200">Priorité Basse 🌱</span>';
+
+                const statusBadge = status === 'Atteint'
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">Terminé 🎉</span>'
+                    : status === 'En pause'
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 rounded">En Pause ⏸️</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 rounded">Actif 🚀</span>';
+
+                return `
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between relative overflow-hidden">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <span class="text-[10px] uppercase font-bold text-slate-400">${escapeHTML(category)}</span>
+                                    <h3 class="font-bold text-slate-800 text-sm leading-snug">${escapeHTML(p.title)}</h3>
+                                </div>
+                                <div class="flex space-x-1">
+                                    <button onclick="openProjectModal('${p.id}')" title="Éditer" class="p-1 text-blue-600 hover:text-blue-800">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteProject('${p.id}')" title="Supprimer" class="p-1 text-rose-600 hover:text-rose-800">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                ${statusBadge}
+                                ${priorityBadge}
+                            </div>
+
+                            <div class="space-y-1 pt-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500 font-medium">Progression SMART</span>
+                                    <span class="font-bold text-slate-800">${pct.toFixed(1)}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                    <div class="${pct >= 100 ? 'bg-emerald-500' : 'bg-blue-600'} h-2.5 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 bg-slate-50/50 p-2.5 rounded-lg">
+                                <div>
+                                    <p class="text-[10px] text-slate-400 font-semibold">CAPITAL ACQUIS</p>
+                                    <p class="font-bold text-slate-800">${formatCurrency(saved)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 font-semibold">OBJECTIF FINAL</p>
+                                    <p class="font-bold text-slate-800">${formatCurrency(target)}</p>
+                                </div>
+                                <div class="col-span-2 pt-1 border-t border-slate-200/60 flex justify-between items-center text-[11px]">
+                                    <span class="text-slate-500">Échéance : <strong class="text-slate-700">${p.deadline}</strong> (${monthsLeftText})</span>
+                                </div>
+                            </div>
+
+                            ${status !== 'Atteint' && remaining > 0 ? `
+                                <div class="p-2 bg-amber-50 rounded border border-amber-200/60 text-[11px] text-amber-900 flex justify-between items-center">
+                                    <span>Effort mensuel requis :</span>
+                                    <strong class="font-bold text-amber-800">${formatCurrency(monthlyEffort)}/mo</strong>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="pt-2">
+                            <button onclick="openProjectContributionModal('${p.id}')" class="w-full flex items-center justify-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs py-2 rounded-lg border border-blue-200 transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Alimenter ce Projet</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openProjectModal(id = null) {
+            const modal = document.getElementById('modal-project');
+            const form = document.getElementById('form-project');
+            form.reset();
+
+            if (id) {
+                const proj = appState.projects.find(p => p.id === id);
+                if (proj) {
+                    document.getElementById('modal-proj-title').innerText = "Modifier le Projet SMART";
+                    document.getElementById('proj-id').value = proj.id;
+                    document.getElementById('proj-title-input').value = proj.title;
+                    document.getElementById('proj-category').value = proj.category || 'Investissement';
+                    document.getElementById('proj-priority').value = proj.priority || 'Moyenne';
+                    document.getElementById('proj-target').value = proj.target;
+                    document.getElementById('proj-saved').value = proj.saved;
+                    document.getElementById('proj-deadline').value = proj.deadline;
+                    document.getElementById('proj-status').value = proj.status || 'En cours';
+                }
+            } else {
+                document.getElementById('modal-proj-title').innerText = "Nouveau Projet SMART";
+                document.getElementById('proj-id').value = '';
+                document.getElementById('proj-deadline').value = new Date().toISOString().split('T')[0];
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function saveProject(e) {
+            e.preventDefault();
+            const id = document.getElementById('proj-id').value;
+            const targetVal = parseFloat(document.getElementById('proj-target').value);
+            const savedVal = parseFloat(document.getElementById('proj-saved').value);
+            let statusVal = document.getElementById('proj-status').value;
+
+            if (savedVal >= targetVal && targetVal > 0) {
+                statusVal = 'Atteint';
+            }
+
+            const projData = {
+                id: id || 'proj_' + Date.now(),
+                title: document.getElementById('proj-title-input').value.trim(),
+                category: document.getElementById('proj-category').value,
+                priority: document.getElementById('proj-priority').value,
+                target: targetVal,
+                saved: savedVal,
+                deadline: document.getElementById('proj-deadline').value,
+                status: statusVal
+            };
+
+            if (id) {
+                const idx = appState.projects.findIndex(p => p.id === id);
+                if (idx !== -1) appState.projects[idx] = projData;
+            } else {
+                appState.projects.push(projData);
+            }
+
+            saveState();
+            closeModal('modal-project');
+        }
+
+        function deleteProject(id) {
+            if (confirm("Voulez-vous vraiment supprimer ce projet ?")) {
+                appState.projects = appState.projects.filter(p => p.id !== id);
+                saveState();
+            }
+        }
+
+        function openProjectContributionModal(id) {
+            const proj = appState.projects.find(p => p.id === id);
+            if (!proj) return;
+
+            document.getElementById('contrib-proj-id').value = proj.id;
+            document.getElementById('contrib-proj-name').innerText = `Projet : ${proj.title} (Acquis: ${formatCurrency(proj.saved)})`;
+            document.getElementById('contrib-amount').value = '';
+            document.getElementById('modal-project-contribution').classList.remove('hidden');
+        }
+
+        function saveProjectContribution(e) {
+            e.preventDefault();
+            const id = document.getElementById('contrib-proj-id').value;
+            const addAmount = parseFloat(document.getElementById('contrib-amount').value);
+            const proj = appState.projects.find(p => p.id === id);
+
+            if (proj && addAmount > 0) {
+                proj.saved = parseFloat((proj.saved + addAmount).toFixed(2));
+                if (proj.saved >= proj.target) {
+                    proj.status = 'Atteint';
+                }
+
+                appState.operations.push({
+                    id: 'op_' + Date.now(),
+                    type: 'Projet',
+                    category: proj.category || 'Projet',
+                    description: `Apport au projet : ${proj.title}`,
+                    amount: addAmount,
+                    date: new Date().toISOString().split('T')[0]
+                });
+
+                saveState();
+                closeModal('modal-project-contribution');
+            }
+        }
+
+
+        // NATIVE AUTONOMOUS CANVAS DRAWING FOR REPORTS
+        function renderReports(rev, dep, proj, epar, depPct, projPct, eparPct) {
+            document.getElementById('rep-depense-pct').innerText = depPct.toFixed(1) + '%';
+            document.getElementById('rep-projet-pct').innerText = projPct.toFixed(1) + '%';
+            document.getElementById('rep-epargne-pct').innerText = eparPct.toFixed(1) + '%';
+
+            document.getElementById('rep-depense-bar').style.width = Math.min(depPct, 100) + '%';
+            document.getElementById('rep-projet-bar').style.width = Math.min(projPct, 100) + '%';
+            document.getElementById('rep-epargne-bar').style.width = Math.min(eparPct, 100) + '%';
+
+            const totalEngaged = dep + proj + epar;
+            const totalDispo = Math.max(0, rev - totalEngaged);
+
+            document.getElementById('rep-total-rev').innerText = formatCurrency(rev);
+            document.getElementById('rep-total-eng').innerText = formatCurrency(totalEngaged);
+            document.getElementById('rep-total-dispo').innerText = formatCurrency(totalDispo);
+
+            // Draw autonomous Doughnut Chart on Canvas
+            drawNativeDoughnutCanvas([dep, proj, epar, totalDispo], ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981']);
+        }
+
+        function drawNativeDoughnutCanvas(values, colors) {
+            const canvas = document.getElementById('custom-pie-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const total = values.reduce((a, b) => a + b, 0);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 15;
+            const innerRadius = radius * 0.55;
+
+            if (total === 0) {
+                // Draw neutral gray ring
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.arc(centerX, centerY, innerRadius, 2 * Math.PI, 0, true);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fill();
+                return;
+            }
+
+            let startAngle = -0.5 * Math.PI;
+
+            values.forEach((val, i) => {
+                if (val <= 0) return;
+                const sliceAngle = (val / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+                ctx.closePath();
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+
+                startAngle = endAngle;
+            });
+        }
+
+
+        // SETTINGS INFO RENDER
+        function renderSettingsInfo() {
+            if (!appState.passwordSetDate) return;
+
+            const setDate = new Date(appState.passwordSetDate);
+            document.getElementById('pwd-last-date').innerText = setDate.toLocaleDateString('fr-FR');
+
+            const diffMs = new Date().getTime() - setDate.getTime();
+            const daysUsed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const remaining = Math.max(0, 180 - daysUsed);
+
+            document.getElementById('pwd-remaining-days').innerText = remaining;
+        }
+
+
+        // IMPORT / EXPORT / RESET JSON
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `DOXTEHAD_Budget_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && Array.isArray(imported.operations) && Array.isArray(imported.projects)) {
+                        appState = imported;
+                        saveState();
+                        checkAdminAuth();
+                        alert("Données restaurées avec succès !");
+                    } else {
+                        alert("Le fichier JSON sélectionné n'est pas au format valide DOXTEHAD.");
+                    }
+                } catch (err) {
+                    alert("Erreur lors de la lecture du fichier JSON.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetAll() {
+            if (confirm("ATTENTION : Souhaitez-vous vraiment réinitialiser toutes les données de l'application à zéro ?")) {
+                const currentHash = appState.adminPasswordHash;
+                const currentDate = appState.passwordSetDate;
+
+                appState = {
+                    operations: [],
+                    projects: [],
+                    adminPasswordHash: currentHash,
+                    passwordSetDate: currentDate
+                };
+
+                saveState();
+                alert("L'application a été réinitialisée à 0.00 $US.");
+            }
+        }
+
+
+        // NAVIGATION & UI UTILS
+        function switchTab(tabId) {
+            document.querySelectorAll('section[id^="page-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`page-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-navy-800');
+                btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-navy-900');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-white', 'text-navy-800');
+            activeBtn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-navy-900');
+
+            renderAll();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function escapeHTML(str) {
+            return (str || '').replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>

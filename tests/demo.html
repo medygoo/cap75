@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cap75 · démo locale (fausse base)</title>
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/cap75.css">
+</head>
+<body>
+  <!-- Démo locale : vraie interface, fausse base Supabase en mémoire du navigateur -->
+  <div id="root"><div class="splash">Chargement de Cap75…</div></div>
+  <script src="./fake-supabase.js"></script>
+  <script>window.CAP75_CONFIG = { supabaseUrl: 'https://demo.local', supabaseAnonKey: 'demo' };</script>
+  <script src="../js/finance.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

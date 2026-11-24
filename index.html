@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Cap75 : votre budget 75/15/10, compte par compte, en dollars, francs congolais ou euros. Fonctionne aussi hors ligne.">
+  <title>Cap75 · Budget 75/15/10</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0e2a47">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cap75">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./icons/favicon.ico" sizes="any">
+
+  <link rel="stylesheet" href="./css/cap75.css">
+</head>
+<body>
+  <div id="root"><div class="splash">Chargement de Cap75…</div></div>
+  <noscript><p style="padding:24px">Cap75 a besoin de JavaScript pour fonctionner.</p></noscript>
+
+  <script src="./js/vendor/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/finance.js"></script>
+  <script src="./js/data.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>

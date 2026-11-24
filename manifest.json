@@ -1,0 +1,36 @@
+{
+  "id": "./",
+  "name": "Cap75 · Budget 75/15/10",
+  "short_name": "Cap75",
+  "description": "Votre budget 75/15/10, compte par compte, en dollars, francs congolais ou euros. Fonctionne aussi hors ligne.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0e2a47",
+  "background_color": "#0e2a47",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nouvelle opération",
+      "short_name": "Ajouter",
+      "url": "./?action=new-operation",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mes comptes",
+      "short_name": "Comptes",
+      "url": "./?view=accounts",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
