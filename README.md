@@ -43,6 +43,22 @@ Application web installable (PWA) pour tenir son budget avec la règle **75 / 15
 > (chaque utilisateur ne lit et n'écrit que ses propres lignes). Ne jamais mettre la clé
 > **service_role** dans ce dépôt.
 
+6. Exécuter aussi `supabase/migrations/002_securite.sql` (contrôles d'appartenance et de validité).
+
+### Sécurité en place
+
+- **Base de données** : RLS sur toutes les tables (chacun ne voit et ne modifie que ses lignes) ;
+  aucun droit pour les visiteurs non connectés ; une ligne ne peut référencer que les comptes,
+  projets et récurrences de son propriétaire ; le propriétaire d'une ligne ne peut pas changer ;
+  contrôles de valeurs (montants positifs, types, devises, longueurs, taux, règle ≤ 100 %).
+- **Navigateur** : Content-Security-Policy (scripts de l'appli et projet Supabase uniquement),
+  aucun script en ligne, textes toujours échappés, pas de référent envoyé, refus d'être
+  affichée dans le cadre d'un autre site, service worker qui ne met jamais en cache les données.
+- **Comptes** : mot de passe de 8 caractères minimum avec lettres et chiffres, déconnexion
+  automatique après inactivité, cache local effacé à la déconnexion.
+- Vérifié en production : lecture et écriture anonymes refusées (401), écriture au nom d'un
+  autre refusée (RLS), valeurs invalides refusées (contraintes), aucune donnée d'autrui visible.
+
 ### Gérer les utilisateurs
 
 Tout se fait dans **Authentication → Users** du tableau de bord Supabase :
