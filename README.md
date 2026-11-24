@@ -33,7 +33,7 @@ Application web installable (PWA) pour tenir son budget avec la règle **75 / 15
 1. Créer un projet sur [supabase.com](https://supabase.com).
 2. Dans **SQL Editor**, exécuter `supabase/migrations/001_cap75_schema.sql`.
 3. Dans **Authentication → URL Configuration** :
-   - *Site URL* : l'adresse publique de l'appli (`https://medygoo.github.io/cap75/`) ;
+   - *Site URL* : l'adresse publique de l'appli (`https://cap75.pages.dev/`) ;
    - *Redirect URLs* : la même adresse, plus `http://localhost:8080/` pour le développement.
 4. Dans **Authentication → Sign In / Providers → Email** : laisser *Enable sign ups* activé (inscription libre).
    *Confirm email* activé = l'utilisateur clique le lien reçu avant d'entrer ; désactivé = accès immédiat.
@@ -73,6 +73,7 @@ npm run dev
 ```
 
 - Appli : http://localhost:8080 (avec le projet Supabase de `js/config.js`)
+- Publier : `npm run deploy` (Cloudflare Pages, https://cap75.pages.dev)
 - Démo sans serveur : http://localhost:8080/tests/demo.html (fausse base dans le navigateur)
 
 ## Tests
@@ -89,7 +90,7 @@ l'import, le hors ligne et l'affichage mobile, sans toucher à la vraie base.
 
 ## Publication
 
-Chaque envoi sur `main` lance les tests puis publie l'appli sur GitHub Pages
+Chaque envoi sur `main` lance les tests ; l’ancienne adresse GitHub Pages redirige vers https://cap75.pages.dev. L’appli se publie sur Cloudflare Pages avec `npm run deploy`
 (`.github/workflows/pages.yml`). Seuls les fichiers de l'appli sont publiés.
 
 ## Historique

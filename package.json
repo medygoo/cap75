@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "npx http-server . -p 8080 -c-1",
     "icons": "node tools/make-icons.mjs",
+    "build": "node tools/build-site.mjs",
+    "deploy": "node tools/build-site.mjs && npx --yes wrangler@3 pages deploy _site --project-name cap75 --branch main --commit-dirty=true",
     "lint": "eslint js/*.js",
     "lint:fix": "eslint js/*.js --fix",
     "format": "prettier --write .",
