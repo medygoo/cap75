@@ -311,6 +311,32 @@ test.describe('Mobile @mobile', () => {
   });
 });
 
+test.describe('Sécurité du navigateur', () => {
+  test('la politique CSP est active et ne bloque rien dans l’appli', async ({ page }) => {
+    const violations = [];
+    page.on('console', (msg) => {
+      if (/Content Security Policy|Refused to/i.test(msg.text())) violations.push(msg.text());
+    });
+    await signUp(page);
+    const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    await addOperation(page, { type: 'Revenu', amount: 10, category: 'CSP' });
+    for (const view of ['Comptes', 'Récurrences', 'Projets', 'Rapports', 'Paramètres']) {
+      await page.locator('.sidebar').getByRole('button', { name: view }).click();
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test('un script injecté dans une catégorie reste du texte', async ({ page }) => {
+    await signUp(page);
+    await addOperation(page, { type: 'Dépense', amount: 5, category: '<img src=x onerror="window.__pwned=1">' });
+    await page.getByRole('button', { name: 'Opérations', exact: true }).first().click();
+    await expect(page.locator('tbody')).toContainText('<img src=x');
+    expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
+  });
+});
+
 test('les montants restent lisibles (pas de NaN ni undefined)', async ({ page }) => {
   await signUp(page);
   await addOperation(page, { type: 'Revenu', amount: 10, category: 'Test' });

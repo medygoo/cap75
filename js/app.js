@@ -178,6 +178,12 @@
   document.addEventListener('DOMContentLoaded', boot);
 
   async function boot() {
+    // Refuse d'être affichée dans le cadre d'un autre site (protection anti-clickjacking)
+    if (window.top !== window.self) {
+      document.body.innerHTML = '';
+      window.top.location = window.self.location.href;
+      return;
+    }
     registerServiceWorker();
     bindGlobalEvents();
 
