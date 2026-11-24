@@ -73,12 +73,18 @@
 
     const auth = {
       async getSession() {
+        // Simule un navigateur intégré où la bibliothèque reste bloquée
+        if (localStorage.getItem('__fake_sb_hang') === '1') return new Promise(() => {});
         await delay();
         return { data: { session: currentSession() }, error: null };
       },
       onAuthStateChange(cb) {
         listeners.push(cb);
         setTimeout(() => cb('INITIAL_SESSION', currentSession()), 0);
+        // Simule le retour d'un lien « mot de passe oublié » (#…&type=recovery)
+        if (/type=recovery/.test(global.location.hash) && currentSession()) {
+          setTimeout(() => cb('PASSWORD_RECOVERY', currentSession()), 0);
+        }
         return { data: { subscription: { unsubscribe() {} } } };
       },
       async signInWithPassword({ email, password }) {

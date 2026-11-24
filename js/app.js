@@ -225,13 +225,29 @@
       if (event === 'TOKEN_REFRESHED' && session) ui.session = session;
     });
 
+    // Lien d'invitation : …/cap75/?inscription ouvre directement « Créer un compte »
+    const params = new URLSearchParams(location.search);
+    if (params.has('inscription') || params.get('mode') === 'signup') ui.authMode = 'signup';
+
     if (D.urlAuth.error) {
       ui.authNotice = { type: 'error', text: `Lien invalide ou expiré : ${D.urlAuth.error}` };
     }
 
     try {
-      const session = await D.getSession();
-      if (session && D.urlAuth.type === 'recovery') {
+      // Ne jamais rester bloqué sur « Chargement » : 8 s maximum pour récupérer la session
+      const session = await Promise.race([
+        D.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+      ]).catch((err) => {
+        if (err && err.message === 'timeout') {
+          ui.authNotice = { type: 'warn', text: 'La connexion au serveur prend trop de temps. Vérifiez Internet puis réessayez, ou ouvrez le lien dans Chrome.' };
+          return null;
+        }
+        throw err;
+      });
+      if (ui.authMode === 'new-password' && ui.session) {
+        // L'évènement PASSWORD_RECOVERY a déjà affiché l'écran « Nouveau mot de passe »
+      } else if (session && D.urlAuth.type === 'recovery') {
         ui.session = session;
         ui.authMode = 'new-password';
         renderAuth();

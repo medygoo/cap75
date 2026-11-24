@@ -67,6 +67,30 @@ test.describe('Compte et connexion', () => {
     await expect(page.locator('.auth-card')).toContainText(email);
   });
 
+  test('le lien « mot de passe oublié » ouvre l’écran Nouveau mot de passe puis l’appli', async ({ page }) => {
+    await signUp(page);
+    // Nouvelle page complète, comme un clic depuis l'e-mail (pas un simple changement de #)
+    await page.goto('/index.html#access_token=x&refresh_token=y&expires_in=3600&token_type=bearer&type=recovery');
+    await expect(page.getByRole('heading', { name: 'Nouveau mot de passe' })).toBeVisible({ timeout: 5000 });
+    await page.locator('input[name=password]').fill('Nouveau2026ok');
+    await page.locator('input[name=confirm]').fill('Nouveau2026ok');
+    await page.getByRole('button', { name: 'Enregistrer le mot de passe' }).click();
+    await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
+    expect(page.url()).not.toContain('access_token');
+  });
+
+  test('si le serveur ne répond pas, l’appli ne reste pas figée sur le chargement', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('__fake_sb_hang', '1'));
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Connexion' })).toBeVisible({ timeout: 12000 });
+    await expect(page.getByRole('alert')).toContainText('prend trop de temps');
+  });
+
+  test('le lien ?inscription ouvre directement « Créer un compte »', async ({ page }) => {
+    await page.goto('/?inscription');
+    await expect(page.getByRole('heading', { name: 'Créer un compte' })).toBeVisible();
+  });
+
   test('mot de passe oublié envoie un lien', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Mot de passe oublié ?' }).click();

@@ -64,7 +64,10 @@
         autoRefreshToken: true,
         detectSessionInUrl: true,
         flowType: 'implicit',
-        storageKey: 'cap75-auth'
+        storageKey: 'cap75-auth',
+        // Verrou en mémoire : navigator.locks peut ne jamais se libérer dans les
+        // navigateurs intégrés (Gmail, WhatsApp…) et figer l'appli au chargement.
+        lock: typeof global.supabase.processLock === 'function' ? global.supabase.processLock : undefined
       }
     });
     global.addEventListener('online', () => flush());
