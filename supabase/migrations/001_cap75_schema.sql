@@ -144,6 +144,15 @@ create trigger operations_updated_at before update on public.operations
   for each row execute function public.set_updated_at();
 
 -- ------------------------------------------------------------
+-- Droits d'accès à l'API : uniquement les utilisateurs connectés.
+-- (Le projet n'expose pas automatiquement les nouvelles tables.)
+-- ------------------------------------------------------------
+revoke all on public.profiles, public.accounts, public.projects, public.recurring, public.operations from anon;
+grant select, insert, update, delete
+  on public.profiles, public.accounts, public.projects, public.recurring, public.operations
+  to authenticated;
+
+-- ------------------------------------------------------------
 -- Sécurité ligne par ligne (RLS)
 -- ------------------------------------------------------------
 alter table public.profiles enable row level security;

@@ -25,7 +25,8 @@ export function uniqueEmail() {
   return `test-${Date.now()}-${Math.floor(Math.random() * 1e6)}@cap75.test`;
 }
 
-export async function signUp(page, { name = 'Test Cap75', email = uniqueEmail() } = {}) {
+// expect : 'dashboard' (attend l'entrée dans l'appli) ou null (le test vérifie lui-même la suite)
+export async function signUp(page, { name = 'Test Cap75', email = uniqueEmail(), expect = 'dashboard' } = {}) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Créer un compte' }).click();
   await page.getByLabel('Votre nom').fill(name);
@@ -33,6 +34,9 @@ export async function signUp(page, { name = 'Test Cap75', email = uniqueEmail() 
   await page.locator('input[name=password]').fill(PASSWORD);
   await page.locator('input[name=confirm]').fill(PASSWORD);
   await page.getByRole('button', { name: 'Créer mon compte' }).click();
+  if (expect === 'dashboard') {
+    await page.locator('#sync-badge').waitFor({ state: 'attached', timeout: 15000 });
+  }
   return email;
 }
 

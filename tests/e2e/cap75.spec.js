@@ -33,7 +33,7 @@ test.describe('Compte et connexion', () => {
   test('refuse un e-mail déjà inscrit', async ({ page }) => {
     const email = await signUp(page);
     await page.getByRole('button', { name: 'Se déconnecter' }).first().click();
-    await signUp(page, { email });
+    await signUp(page, { email, expect: null });
     await expect(page.getByRole('alert')).toContainText('existe déjà');
   });
 
@@ -61,7 +61,7 @@ test.describe('Compte et connexion', () => {
 
   test('confirmation par e-mail quand Supabase l’exige', async ({ page }) => {
     await useFakeBackend(page, { confirmEmail: true });
-    const email = await signUp(page);
+    const email = await signUp(page, { expect: null });
     await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
     await expect(page.locator('.auth-card')).toContainText(email);
   });
