@@ -86,6 +86,24 @@ test.describe('Compte et connexion', () => {
     await expect(page.getByRole('alert')).toContainText('prend trop de temps');
   });
 
+  test('le bouton œil affiche puis masque le mot de passe', async ({ page }) => {
+    await page.goto('/?inscription');
+    const pwd = page.locator('input[name=password]');
+    await pwd.fill('Secret2026');
+    await expect(pwd).toHaveAttribute('type', 'password');
+    const eye = page.locator('input[name=password] + .pwd-toggle');
+    await eye.click();
+    await expect(pwd).toHaveAttribute('type', 'text');
+    await expect(eye).toHaveAttribute('aria-label', 'Cacher la saisie');
+    await expect(pwd).toHaveValue('Secret2026');
+    await eye.click();
+    await expect(pwd).toHaveAttribute('type', 'password');
+    // Chaque champ a son propre bouton (inscription : mot de passe + confirmation)
+    await expect(page.locator('.pwd-toggle')).toHaveCount(2);
+    // Le bouton n'envoie pas le formulaire
+    await expect(page.getByRole('heading', { name: 'Créer un compte' })).toBeVisible();
+  });
+
   test('le lien ?inscription ouvre directement « Créer un compte »', async ({ page }) => {
     await page.goto('/?inscription');
     await expect(page.getByRole('heading', { name: 'Créer un compte' })).toBeVisible();

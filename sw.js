@@ -6,7 +6,7 @@
      hors ligne sont gérées par l'appli (cache local + file d'attente).
    ============================================================ */
 
-const VERSION = 'cap75-v3.2.0';
+const VERSION = 'cap75-v3.2.1';
 const SHELL = [
   './',
   './index.html',

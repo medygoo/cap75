@@ -109,6 +109,17 @@ a { color: var(--proj); }
   background: var(--surface); font-size: 15px;
 }
 .input:focus, .select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(47, 111, 222, 0.18); }
+.pwd-wrap { position: relative; display: block; }
+.pwd-wrap .input { padding-right: 46px; }
+.pwd-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 34px; border: 0; border-radius: var(--radius-s);
+  background: transparent; color: var(--muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pwd-toggle:hover { background: var(--surface-2); color: var(--text); }
+.pwd-toggle[aria-pressed="true"] { color: var(--accent-2); }
+.pwd-toggle svg { width: 19px; height: 19px; }
 .input-amount { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
 .row-3 { display: grid; gap: 12px; grid-template-columns: 1fr 1fr 1fr; }

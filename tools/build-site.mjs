@@ -25,6 +25,18 @@ const minify = (rel, loader) => {
 ['js/app.js', 'js/data.js', 'js/finance.js', 'js/config.js', 'sw.js'].forEach((f) => minify(f, 'js'));
 minify('css/cap75.css', 'css');
 
+// Numéro de version dans les liens (app.js?v=3.2.1) : une mise à jour est prise
+// immédiatement, même si l'ancien fichier est encore en cache sur le téléphone.
+const version = (readFileSync(resolve(root, 'sw.js'), 'utf8').match(/cap75-v([\d.]+)/) || [])[1];
+if (!version) throw new Error('Version introuvable dans sw.js');
+const stamp = (s) => s.replace(/(\.\/(?:js|css)\/[\w./-]+\.(?:js|css))"/g, `$1?v=${version}"`);
+writeFileSync(resolve(out, 'index.html'), stamp(readFileSync(resolve(out, 'index.html'), 'utf8')));
+writeFileSync(
+  resolve(out, 'sw.js'),
+  readFileSync(resolve(out, 'sw.js'), 'utf8').replace(/"(\.\/(?:js|css)\/[\w./-]+\.(?:js|css))"/g, `"$1?v=${version}"`)
+);
+console.log('version', version, 'appliquée aux liens');
+
 // Cache : la page et le service worker sont toujours revérifiés (mises à jour immédiates),
 // les autres fichiers restent en cache et se rafraîchissent en arrière-plan.
 writeFileSync(
@@ -41,14 +53,14 @@ writeFileSync(
     '',
     ...['app', 'data', 'finance', 'config'].flatMap((n) => [
       `/js/${n}.js`,
-      '  Cache-Control: public, max-age=3600, stale-while-revalidate=604800',
+      '  Cache-Control: public, max-age=2592000, immutable',
       ''
     ]),
     '/css/*',
-    '  Cache-Control: public, max-age=3600, stale-while-revalidate=604800',
+    '  Cache-Control: public, max-age=2592000, immutable',
     '',
     '/js/vendor/*',
-    '  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000',
+    '  Cache-Control: public, max-age=2592000, immutable',
     '',
     '/icons/*',
     '  Cache-Control: public, max-age=2592000, immutable',
