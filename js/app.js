@@ -838,10 +838,7 @@
       </section>
       <div class="split">
         <div class="stack" style="gap:20px">
-          <section class="panel">
-            <div class="panel-head"><h2>Opérations du mois</h2><button class="btn btn-ghost btn-sm" data-action="go" data-view="operations">Tout voir</button></div>
-            ${monthOps.length ? opsTable(monthOps.slice(0, 8), false) : emptyState('Aucune opération ce mois-ci', 'Commencez par enregistrer votre premier revenu.', 'new-operation', 'Ajouter une opération')}
-          </section>
+          ${monthOps.length ? '' : `<section class="panel">${emptyState('Aucune opération ce mois-ci', 'Commencez par enregistrer votre premier revenu.', 'new-operation', 'Ajouter une opération')}</section>`}
           <section class="panel">
             <div class="panel-head"><h2>Où part l'argent</h2><p>Dépenses du mois par catégorie.</p></div>
             ${cats.length ? barsList(cats, 'var(--dep)') : '<p class="muted">Aucune dépense enregistrée ce mois-ci.</p>'}
