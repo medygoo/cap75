@@ -479,12 +479,119 @@
     return { errors, operations, projects };
   }
 
+  // ------------------------------------------------------------
+  // Taux de change : date, source, fraîcheur
+  // rates = { USD: 1, CDF: 2850, EUR: 0.92, _date: 'AAAA-MM-JJ', _source: 'auto'|'manuel', _auto: true }
+  // ------------------------------------------------------------
+  function ratesInfo(rates, today) {
+    const r = rates || {};
+    const d = parseISODate(r._date);
+    const t = parseISODate(today || todayISO());
+    const ageDays = d && t ? Math.round((t - d) / 86400000) : null;
+    return { date: r._date || null, source: r._source || 'manuel', auto: r._auto !== false, ageDays };
+  }
+
+  function needsRateRefresh(rates, today) {
+    const info = ratesInfo(rates, today);
+    return info.auto && (info.ageDays === null || info.ageDays >= 1);
+  }
+
+  // Lit la réponse d'un service public de taux (base USD) et valide les valeurs
+  function parseRateResponse(json) {
+    const src = json && (json.rates || json.conversion_rates);
+    if (!src) return null;
+    const cdf = Number(src.CDF);
+    const eur = Number(src.EUR);
+    if (!(cdf > 100 && cdf < 1e6) || !(eur > 0.1 && eur < 10)) return null;
+    return { CDF: round2(cdf), EUR: Math.round(eur * 10000) / 10000 };
+  }
+
+  // ------------------------------------------------------------
+  // Alertes en couleurs
+  // Niveaux : danger (rouge) > warning (orange) > info (bleu) > success (vert)
+  // ------------------------------------------------------------
+  const DEFAULT_ALERT_RULES = { loyerMax: 30, alerteDep: 70 };
+  const LEVEL_ORDER = { danger: 0, warning: 1, info: 2, success: 3 };
+
+  function buildAlerts(ctx) {
+    const { operations, profile, accounts, projects, recurring, month, today } = ctx;
+    const base = (profile && profile.base_currency) || 'USD';
+    const rules = Object.assign({}, DEFAULT_RULES, DEFAULT_ALERT_RULES, profile && profile.rules);
+    const money = (v) => formatMoney(v, base);
+    const pctTxt = (v) => `${Math.round(v)} %`;
+    const t = totals(operations, profile, month);
+    const rc = ruleCheck(t, rules);
+    const out = [];
+    const add = (level, id, title, text) => out.push({ level, id, title, text });
+
+    if (t.revenus <= 0) {
+      if (t.count > 0) add('info', 'no-income', 'Revenus du mois manquants', 'Des sorties sont enregistrées mais aucun revenu : ajoutez vos revenus pour suivre la règle.');
+    } else {
+      if (rc.alerts.depenses) {
+        add('danger', 'budget', 'Alerte budget', `Vos dépenses représentent ${pctTxt(rc.depPct)} des revenus. Vous avez dépassé la limite de ${rules.depensesMax} % (${money(rc.maxDep)}).`);
+      } else if (rc.depPct >= rules.alerteDep) {
+        add('warning', 'budget-near', 'Dépenses à surveiller', `Vos dépenses atteignent ${pctTxt(rc.depPct)} des revenus, proche de la limite de ${rules.depensesMax} %. Il reste ${money(rc.maxDep - t.depenses)} avant le plafond.`);
+      }
+      const loyer = (operations || [])
+        .filter((o) => o.type === 'Dépense' && inMonth(o, month) && /loyer|rent|maison/i.test(o.category || ''))
+        .reduce((s, o) => s + toBase(o, profile), 0);
+      const loyerPct = (loyer / t.revenus) * 100;
+      if (loyer > 0 && loyerPct > rules.loyerMax) {
+        add('danger', 'rent', 'Alerte loyer', `Votre loyer représente ${pctTxt(loyerPct)} des revenus. Le seuil de ${rules.loyerMax} % est dépassé.`);
+      }
+      if (rc.alerts.epargne) {
+        add('warning', 'saving', 'Épargne à renforcer', `Votre épargne représente ${pctTxt(rc.eparPct)} des revenus. L'objectif est d'au moins ${rules.epargneMin} % (${money(rc.minEpar)}).`);
+      }
+      if (rc.alerts.projets) {
+        add('warning', 'projects', 'Projets au-dessus de la cible', `Les projets représentent ${pctTxt(rc.projPct)} des revenus, au-delà de la cible de ${rules.projetsMax} %.`);
+      }
+      if (rc.respected) {
+        add('success', 'cap-ok', 'Cap tenu', `Bravo : ce mois-ci, la règle ${rules.depensesMax}/${rules.projetsMax}/${rules.epargneMin} est respectée.`);
+      }
+    }
+
+    const bal = balances(accounts, operations, profile && profile.rates);
+    (accounts || []).filter((a) => !a.archived && bal[a.id] < 0).forEach((a) => {
+      add('danger', `overdraft-${a.id}`, 'Compte à découvert', `« ${a.name} » est négatif : ${formatMoney(bal[a.id], a.currency)}. Vérifiez vos saisies ou faites un transfert.`);
+    });
+
+    (projects || []).forEach((p) => {
+      const pr = projectProgress(p, operations, profile, today ? parseISODate(today) : undefined);
+      if (pr.reached || pr.status === 'En pause') return;
+      if (pr.deadlineState === 'overdue') {
+        add('warning', `late-${p.id}`, 'Projet en retard', `« ${p.title} » a dépassé son échéance : il manque ${money(pr.remaining)}.`);
+      }
+    });
+
+    const day = today || todayISO();
+    const in3 = toISODate(new Date(parseISODate(day).getTime() + 3 * 86400000));
+    (recurring || []).forEach((r) => {
+      const next = upcomingDate(r, day);
+      if (next && next <= in3) {
+        add('info', `soon-${r.id}`, `${r.type === 'Revenu' ? 'Entrée' : 'Échéance'} bientôt`, `${r.category || r.type} : ${formatMoney(r.amount, r.currency)} prévu le ${next.split('-').reverse().join('/')}.`);
+      }
+    });
+
+    const usesOtherCurrency = base !== 'USD' || (operations || []).some((o) => o.currency && o.currency !== 'USD') || (accounts || []).some((a) => a.currency !== 'USD');
+    const ri = ratesInfo(profile && profile.rates, day);
+    if (usesOtherCurrency && (ri.ageDays === null || ri.ageDays > 7)) {
+      add('info', 'rates', 'Taux de change à vérifier', ri.date ? `Le taux utilisé date du ${ri.date.split('-').reverse().join('/')}. Mettez-le à jour dans Paramètres.` : 'Vérifiez le taux USD/CDF dans Paramètres pour des conversions justes.');
+    }
+
+    return out.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
+  }
+
   const api = {
     TYPES,
     BUDGET_TYPES,
     CURRENCIES,
     DEFAULT_RATES,
     DEFAULT_RULES,
+    DEFAULT_ALERT_RULES,
+    ratesInfo,
+    needsRateRefresh,
+    parseRateResponse,
+    buildAlerts,
     round2,
     uuid,
     toISODate,

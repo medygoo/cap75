@@ -16,6 +16,11 @@ export async function useFakeBackend(page, opts = {}) {
   await page.route('**/js/config.js', (route) =>
     route.fulfill({ contentType: 'application/javascript', body: testConfig })
   );
+  // Service de taux du jour simulé (mêmes valeurs que les taux par défaut)
+  const rates = opts.rates || { CDF: 2850, EUR: 0.92 };
+  await page.route('https://open.er-api.com/**', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ result: 'success', rates: Object.assign({ USD: 1 }, rates) }) })
+  );
   if (opts.confirmEmail) {
     await page.addInitScript(() => localStorage.setItem('__fake_sb_confirm', '1'));
   }

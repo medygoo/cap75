@@ -252,6 +252,76 @@ describe('Import des anciens carnets DOXTEHAD (v1 et v2)', () => {
   });
 });
 
+describe('Taux du jour', () => {
+  it('lit la réponse du service public et refuse les valeurs aberrantes', () => {
+    expect(F.parseRateResponse({ rates: { USD: 1, CDF: 2853.4, EUR: 0.9213 } })).toEqual({ CDF: 2853.4, EUR: 0.9213 });
+    expect(F.parseRateResponse({ rates: { CDF: 0, EUR: 0.9 } })).toBeNull();
+    expect(F.parseRateResponse({ rates: { CDF: 2850, EUR: 50 } })).toBeNull();
+    expect(F.parseRateResponse({})).toBeNull();
+  });
+
+  it('sait si le taux doit être rafraîchi', () => {
+    expect(F.needsRateRefresh({ CDF: 2850 }, '2026-11-27')).toBe(true);
+    expect(F.needsRateRefresh({ CDF: 2850, _date: '2026-11-27' }, '2026-11-27')).toBe(false);
+    expect(F.needsRateRefresh({ CDF: 2850, _date: '2026-11-26' }, '2026-11-27')).toBe(true);
+    expect(F.needsRateRefresh({ CDF: 2850, _date: '2026-11-20', _auto: false }, '2026-11-27')).toBe(false);
+    expect(F.ratesInfo({ _date: '2026-11-20', _source: 'auto' }, '2026-11-27')).toMatchObject({ ageDays: 7, source: 'auto' });
+  });
+});
+
+describe('Alertes en couleurs', () => {
+  const base = { profile, accounts: [{ id: 'caisse', name: 'Caisse', currency: 'USD', opening_balance: 0 }], projects: [], recurring: [], month: '2026-11', today: '2026-11-27' };
+  const ids = (alerts) => alerts.map((a) => `${a.level}:${a.id}`);
+
+  it('signale loyer, budget dépassé et épargne, du plus grave au moins grave', () => {
+    const alerts = F.buildAlerts(Object.assign({}, base, {
+      operations: [
+        op({ type: 'Revenu', amount: 1000, date: '2026-11-01' }),
+        op({ type: 'Dépense', amount: 600, category: 'Loyer', date: '2026-11-02' }),
+        op({ type: 'Dépense', amount: 300, category: 'Alimentation', date: '2026-11-03' })
+      ]
+    }));
+    expect(ids(alerts)).toEqual(['danger:budget', 'danger:rent', 'warning:saving']);
+    expect(alerts[1].text).toContain('60 %');
+  });
+
+  it('prévient avant le plafond (orange) et félicite quand le cap est tenu (vert)', () => {
+    const near = F.buildAlerts(Object.assign({}, base, {
+      operations: [op({ type: 'Revenu', amount: 1000, date: '2026-11-01' }), op({ type: 'Dépense', amount: 720, date: '2026-11-02' }), op({ type: 'Épargne', amount: 100, date: '2026-11-03' })]
+    }));
+    expect(ids(near)).toContain('warning:budget-near');
+    const ok = F.buildAlerts(Object.assign({}, base, {
+      operations: [op({ type: 'Revenu', amount: 1000, date: '2026-11-01' }), op({ type: 'Dépense', amount: 500, date: '2026-11-02' }), op({ type: 'Épargne', amount: 150, date: '2026-11-03' })]
+    }));
+    expect(ids(ok)).toEqual(['success:cap-ok']);
+  });
+
+  it('respecte des seuils personnalisés (loyer jusqu’à 70 %)', () => {
+    const alerts = F.buildAlerts(Object.assign({}, base, {
+      profile: Object.assign({}, profile, { rules: Object.assign({}, profile.rules, { loyerMax: 70 }) }),
+      operations: [op({ type: 'Revenu', amount: 1000, date: '2026-11-01' }), op({ type: 'Dépense', amount: 600, category: 'Loyer', date: '2026-11-02' })]
+    }));
+    expect(ids(alerts)).not.toContain('danger:rent');
+  });
+
+  it('signale un compte à découvert, un projet en retard et une échéance proche', () => {
+    const alerts = F.buildAlerts(Object.assign({}, base, {
+      operations: [op({ type: 'Dépense', amount: 50, date: '2026-11-02' })],
+      projects: [{ id: 'p', title: 'Moto', target: 1000, initial_saved: 0, deadline: '2026-10-01', status: 'En cours' }],
+      recurring: [{ id: 'r', type: 'Dépense', category: 'Loyer', amount: 300, currency: 'USD', frequency: 'monthly', start_date: '2026-10-29' }]
+    }));
+    expect(ids(alerts)).toEqual(expect.arrayContaining(['danger:overdraft-caisse', 'warning:late-p', 'info:soon-r', 'info:no-income']));
+  });
+
+  it('rappelle de vérifier un vieux taux quand on utilise les francs', () => {
+    const alerts = F.buildAlerts(Object.assign({}, base, {
+      profile: Object.assign({}, profile, { rates: Object.assign({}, profile.rates, { _date: '2026-11-01' }) }),
+      operations: [op({ type: 'Revenu', amount: 285000, currency: 'CDF', date: '2026-11-01' })]
+    }));
+    expect(ids(alerts)).toContain('info:rates');
+  });
+});
+
 describe('Mois', () => {
   it('avance et recule de mois, y compris à cheval sur deux années', () => {
     expect(F.shiftMonth('2026-12', 1)).toBe('2027-01');

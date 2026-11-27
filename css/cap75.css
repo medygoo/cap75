@@ -109,6 +109,35 @@ a { color: var(--proj); }
   background: var(--surface); font-size: 15px;
 }
 .input:focus, .select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(47, 111, 222, 0.18); }
+/* Conversion affichée sous le montant */
+.convert-hint { margin: -6px 0 0; font-size: 13px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.convert-hint strong { color: var(--accent-2); font-size: 15px; }
+.rate-status { font-size: 13px; color: var(--muted); }
+
+/* Alertes en couleurs */
+.alerts { display: grid; gap: 10px; }
+.alert {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; border-radius: var(--radius); border: 1px solid; border-left-width: 5px;
+}
+.alert strong { display: block; font-size: 14px; }
+.alert p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; }
+.alert-icon {
+  flex: none; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff;
+}
+.alert.danger { background: #fdecea; border-color: #f2b8b3; border-left-color: #c8372d; color: #7d1f19; }
+.alert.danger .alert-icon { background: #c8372d; }
+.alert.warning { background: #fff5e0; border-color: #f1d49a; border-left-color: #d88a07; color: #6e4706; }
+.alert.warning .alert-icon { background: #d88a07; }
+.alert.info { background: #e8f0fd; border-color: #bcd0f6; border-left-color: #2f6fde; color: #173f86; }
+.alert.info .alert-icon { background: #2f6fde; }
+.alert.success { background: #e3f5ec; border-color: #a9dcc3; border-left-color: #1e9e6a; color: #13603f; }
+.alert.success .alert-icon { background: #1e9e6a; }
+.alert-count { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.alert-count.danger { background: #fdecea; color: #a52a22; }
+.alert-count.warning { background: #fff5e0; color: #8a5a06; }
+
 .pwd-wrap { position: relative; display: block; }
 .pwd-wrap .input { padding-right: 46px; }
 .pwd-toggle {

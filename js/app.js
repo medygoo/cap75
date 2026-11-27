@@ -5,7 +5,7 @@
    Données : Cap75Data (Supabase + cache hors ligne)
    Calculs : Cap75Finance (fonctions pures)
    ============================================================ */
-/* global location, history, URLSearchParams, FormData, getComputedStyle */
+/* global location, history, URLSearchParams, FormData, getComputedStyle, AbortController */
 
 (function () {
   'use strict';
@@ -388,6 +388,7 @@
       if (generated > 0) toast(`${generated} opération(s) récurrente(s) ajoutée(s) automatiquement.`, 'success', 5000);
       renderApp();
       handleShortcut();
+      refreshRates(false);
     } catch (err) {
       renderFatal(`Impossible de charger vos données : ${err.message}`);
     } finally {
@@ -741,6 +742,71 @@
     return `<span class="delta ${Math.abs(v) < 0.5 ? '' : good ? 'good' : 'bad'}">${up ? '+' : '−'}${Math.abs(v).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} % vs ${esc(prev)}</span>`;
   }
 
+  // ------------------------------------------------------------
+  // Taux du jour automatique (service public, base USD)
+  // ------------------------------------------------------------
+  const RATES_URL = 'https://open.er-api.com/v6/latest/USD';
+
+  async function refreshRates(force) {
+    if (!S.profile || (!force && !F.needsRateRefresh(S.profile.rates, today()))) return false;
+    if (!navigator.onLine) {
+      if (force) toast('Hors ligne : impossible de récupérer le taux du jour.', 'warning');
+      return false;
+    }
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(RATES_URL, { signal: ctrl.signal, cache: 'no-store', referrerPolicy: 'no-referrer' });
+      clearTimeout(timer);
+      const parsed = F.parseRateResponse(await res.json());
+      if (!parsed) throw new Error('réponse inattendue');
+      D.save('profiles', Object.assign({}, S.profile, {
+        rates: Object.assign({}, S.profile.rates, { USD: 1, CDF: parsed.CDF, EUR: parsed.EUR, _date: today(), _source: 'auto', _auto: true })
+      }));
+      if (force) toast(`Taux mis à jour : 1 $ = ${parsed.CDF.toLocaleString('fr-FR')} FC.`, 'success');
+      refresh();
+      return true;
+    } catch {
+      if (force) toast('Le taux du jour est indisponible pour le moment. Gardez ou saisissez votre taux.', 'warning', 6000);
+      return false;
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Panneau d'alertes en couleurs
+  // ------------------------------------------------------------
+  const ALERT_ICONS = { danger: '!', warning: '!', info: 'i', success: '✓' };
+
+  function alertsBlock() {
+    const alerts = F.buildAlerts({
+      operations: S.operations,
+      profile: S.profile,
+      accounts: S.accounts,
+      projects: S.projects,
+      recurring: S.recurring,
+      month: ui.month,
+      today: today()
+    });
+    if (!alerts.length) return '';
+    const shown = ui.showAllAlerts ? alerts : alerts.slice(0, 4);
+    const counts = ['danger', 'warning'].map((l) => alerts.filter((a) => a.level === l).length);
+    return `
+      <section class="panel alerts-panel" aria-label="Alertes">
+        <div class="panel-head"><h2>Alertes</h2>
+          ${counts[0] ? `<span class="alert-count danger">${counts[0]} à corriger</span>` : ''}
+          ${counts[1] ? `<span class="alert-count warning">${counts[1]} à surveiller</span>` : ''}
+        </div>
+        <div class="alerts">
+          ${shown.map((a) => `
+            <div class="alert ${a.level}" role="${a.level === 'danger' ? 'alert' : 'status'}" data-alert="${esc(a.id)}">
+              <span class="alert-icon" aria-hidden="true">${ALERT_ICONS[a.level]}</span>
+              <div><strong>${esc(a.title)}</strong><p>${esc(a.text)}</p></div>
+            </div>`).join('')}
+        </div>
+        ${alerts.length > shown.length || ui.showAllAlerts ? `<button class="link-btn" data-action="toggle-alerts" style="margin-top:10px">${ui.showAllAlerts ? 'Voir moins' : `Voir les ${alerts.length} alertes`}</button>` : ''}
+      </section>`;
+  }
+
   function viewDashboard() {
     const t = F.totals(S.operations, S.profile, ui.month);
     const prev = F.totals(S.operations, S.profile, F.shiftMonth(ui.month, -1));
@@ -763,6 +829,7 @@
 
     return `
       ${capBlock(t, rc)}
+      ${alertsBlock()}
       <section class="stats-row">
         <div class="stat rev"><span class="label">Revenus</span><span class="value num">${fmt(t.revenus)}</span>${deltaTag(cmp.revenus, true)}</div>
         <div class="stat dep"><span class="label">Dépenses</span><span class="value num">${fmt(t.depenses)}</span>${deltaTag(cmp.depenses, false)}</div>
@@ -920,7 +987,7 @@
       : Object.assign(
           {
             type: 'Dépense',
-            currency: first.currency || base(),
+            currency: entryCurrency() !== 'auto' ? entryCurrency() : first.currency || base(),
             date: F.inMonth({ date: today() }, ui.month) ? today() : `${ui.month}-01`,
             account_id: first.id,
             amount: ''
@@ -971,6 +1038,36 @@
     $('[data-show=project]', form).hidden = type !== 'Projet';
     $('#cat-list', form).innerHTML = categoryOptions(type).map((c) => `<option value="${esc(c)}">`).join('');
     if (form.elements.repeat) form.elements.frequency.disabled = !form.elements.repeat.checked;
+    if (!form.querySelector('[data-convert]') && form.elements.amount) {
+      form.elements.amount.closest('.row').insertAdjacentHTML('afterend', '<p class="convert-hint" data-convert aria-live="polite"></p>');
+    }
+    updateConvertHint(form);
+  }
+
+  // Devise proposée par défaut dans les formulaires (réglage de cet appareil)
+  const ENTRY_KEY = 'cap75_entry_currency';
+  function entryCurrency() {
+    try {
+      return localStorage.getItem(ENTRY_KEY) || 'auto';
+    } catch {
+      return 'auto';
+    }
+  }
+
+  // Conversion affichée en direct sous le montant : « 100 000 FC ≈ 35,09 $ »
+  function updateConvertHint(form) {
+    const hint = form.querySelector('[data-convert]');
+    if (!hint || !form.elements.currency) return;
+    const cur = form.elements.currency.value;
+    const amount = parseFloat(String(form.elements.amount.value || '').replace(',', '.'));
+    const target = cur !== base() ? base() : cur === 'CDF' ? 'USD' : 'CDF';
+    const rates = S.profile.rates;
+    const unit = F.convert(1, 'USD', 'CDF', rates);
+    const info = F.ratesInfo(rates, today());
+    const rateTxt = `Taux : 1 $ = ${Math.round(unit).toLocaleString('fr-FR')} FC${info.date ? ` (${info.source === 'auto' ? 'auto' : 'manuel'}, ${info.date.split('-').reverse().slice(0, 2).join('/')})` : ''}`;
+    hint.innerHTML = amount > 0
+      ? `<strong class="num">≈ ${esc(fmtCur(F.convert(amount, cur, target, rates), target))}</strong> <span>${esc(rateTxt)}</span>`
+      : `<span>${esc(rateTxt)}</span>`;
   }
 
   function readMovement(fd) {
@@ -1189,7 +1286,7 @@
     const first = activeAccounts()[0] || {};
     const r = id
       ? S.recurring.find((x) => x.id === id)
-      : { type: 'Dépense', frequency: 'monthly', start_date: today(), currency: first.currency || base(), account_id: first.id, amount: '' };
+      : { type: 'Dépense', frequency: 'monthly', start_date: today(), currency: entryCurrency() !== 'auto' ? entryCurrency() : first.currency || base(), account_id: first.id, amount: '' };
     openModal(`
       <div class="modal-card">
         <div class="modal-head"><h2>${id ? 'Modifier la récurrence' : 'Nouvelle récurrence'}</h2><button class="icon-btn" data-action="close-modal" aria-label="Fermer">${icon('close')}</button></div>
@@ -1563,8 +1660,10 @@
   // ------------------------------------------------------------
   function viewSettings() {
     const p = S.profile;
-    const r = Object.assign({}, F.DEFAULT_RULES, p.rules);
+    const r = Object.assign({}, F.DEFAULT_RULES, F.DEFAULT_ALERT_RULES, p.rules);
     const rates = Object.assign({}, F.DEFAULT_RATES, p.rates);
+    const ri = F.ratesInfo(p.rates, today());
+    const entry = entryCurrency();
     const email = (ui.session && ui.session.user && ui.session.user.email) || '';
     const installed = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
     return `
@@ -1581,14 +1680,20 @@
           </form>
         </section>
         <section class="panel">
-          <div class="panel-head"><h2>Devises et taux</h2><p>Les totaux sont calculés dans la devise principale. Mettez les taux à jour quand ils changent.</p></div>
+          <div class="panel-head"><h2>Devises et taux</h2><p>Saisissez en francs, en dollars ou en euros : tout est converti automatiquement dans la devise principale.</p></div>
           <form class="stack" data-form="currency" novalidate>
-            <label class="field"><span>Devise principale</span><select class="select" name="base_currency">${Object.keys(F.CURRENCIES).map((c) => `<option value="${c}" ${p.base_currency === c ? 'selected' : ''}>${c} · ${F.CURRENCIES[c].label}</option>`).join('')}</select></label>
+            <div class="row">
+              <label class="field"><span>Devise principale</span><select class="select" name="base_currency">${Object.keys(F.CURRENCIES).map((c) => `<option value="${c}" ${p.base_currency === c ? 'selected' : ''}>${c} · ${F.CURRENCIES[c].label}</option>`).join('')}</select><small>Celle des totaux et des rapports.</small></label>
+              <label class="field"><span>Devise de saisie</span><select class="select" name="entry_currency"><option value="auto" ${entry === 'auto' ? 'selected' : ''}>Celle du compte choisi</option>${Object.keys(F.CURRENCIES).map((c) => `<option value="${c}" ${entry === c ? 'selected' : ''}>Toujours ${c}</option>`).join('')}</select><small>Proposée dans « Nouvelle opération ».</small></label>
+            </div>
             <div class="row">
               <label class="field"><span>1 USD = … CDF</span><input class="input" type="number" step="0.01" min="0.01" name="CDF" value="${esc(rates.CDF)}"></label>
               <label class="field"><span>1 USD = … EUR</span><input class="input" type="number" step="0.0001" min="0.0001" name="EUR" value="${esc(rates.EUR)}"></label>
             </div>
-            <div><button class="btn" type="submit">Enregistrer les taux</button></div>
+            <p class="rate-status">${ri.date ? `Taux ${ri.source === 'auto' ? 'automatique' : 'saisi à la main'} du ${esc(ri.date.split('-').reverse().join('/'))}.` : 'Taux par défaut, jamais mis à jour.'}</p>
+            <label class="check"><input type="checkbox" name="auto_rates" ${ri.auto ? 'checked' : ''}> Mettre à jour le taux automatiquement chaque jour (taux officiel)</label>
+            <small class="muted" style="font-size:12px;margin-top:-8px">Le taux officiel peut différer du taux du marché. Si vous saisissez votre propre taux, il est gardé et la mise à jour automatique s'arrête.</small>
+            <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" type="submit">Enregistrer</button><button class="btn btn-ghost" type="button" data-action="refresh-rates">Actualiser le taux du jour</button></div>
           </form>
         </section>
         <section class="panel">
@@ -1600,6 +1705,10 @@
               <label class="field"><span>Épargne min (%)</span><input class="input" type="number" min="0" max="100" step="1" name="epargneMin" value="${esc(r.epargneMin)}"></label>
             </div>
             <p class="rules-sum" id="rules-sum">Total : ${r.depensesMax + r.projetsMax + r.epargneMin} %</p>
+            <div class="row">
+              <label class="field"><span>Alerte loyer au-delà de (%)</span><input class="input" type="number" min="0" max="100" step="1" name="loyerMax" value="${esc(r.loyerMax)}"><small>Part des revenus. Repère courant : 30 %.</small></label>
+              <label class="field"><span>Dépenses à surveiller dès (%)</span><input class="input" type="number" min="0" max="100" step="1" name="alerteDep" value="${esc(r.alerteDep)}"><small>Alerte orange avant le plafond.</small></label>
+            </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" type="submit">Enregistrer la règle</button><button class="btn btn-ghost" type="button" data-action="reset-rules">Revenir à 75 / 15 / 10</button></div>
           </form>
         </section>
@@ -1643,11 +1752,24 @@
       const cdf = parseFloat(fd.get('CDF'));
       const eur = parseFloat(fd.get('EUR'));
       if (!(cdf > 0) || !(eur > 0)) return formError(form, 'Les taux doivent être supérieurs à 0.');
+      const old = Object.assign({}, F.DEFAULT_RATES, p.rates);
+      const changed = Math.abs(old.CDF - cdf) > 0.001 || Math.abs(old.EUR - eur) > 0.00001;
+      // Un taux saisi à la main est celui que l'on veut garder : on coupe la mise à jour
+      // automatique pour qu'il ne soit pas écrasé le lendemain (le marché diffère souvent du taux officiel).
+      const auto = changed ? false : Boolean(fd.get('auto_rates'));
       p.base_currency = fd.get('base_currency');
-      p.rates = { USD: 1, CDF: cdf, EUR: eur };
+      p.rates = Object.assign({}, p.rates, { USD: 1, CDF: cdf, EUR: eur, _auto: auto });
+      if (changed || !p.rates._date) Object.assign(p.rates, { _source: 'manuel', _date: today() });
+      if (changed && fd.get('auto_rates')) toast('Votre taux est gardé : la mise à jour automatique est désactivée.', 'info', 6000);
+      try {
+        localStorage.setItem(ENTRY_KEY, fd.get('entry_currency') || 'auto');
+      } catch {
+        /* réglage local non enregistré */
+      }
       D.save('profiles', p);
       toast('Devises enregistrées.', 'success');
       refresh();
+      if (auto) refreshRates(false);
       return;
     }
     if (kind === 'rules') {
@@ -1659,7 +1781,10 @@
       const vals = Object.values(rules);
       if (vals.some((v) => !Number.isFinite(v) || v < 0 || v > 100)) return formError(form, 'Chaque pourcentage doit être compris entre 0 et 100.');
       if (vals.reduce((a, b) => a + b, 0) > 100) return formError(form, 'Le total ne peut pas dépasser 100 %.');
-      p.rules = rules;
+      const loyerMax = Number(fd.get('loyerMax'));
+      const alerteDep = Number(fd.get('alerteDep'));
+      if (![loyerMax, alerteDep].every((v) => Number.isFinite(v) && v >= 0 && v <= 100)) return formError(form, 'Les seuils d’alerte doivent être compris entre 0 et 100.');
+      p.rules = Object.assign(rules, { loyerMax, alerteDep });
       D.save('profiles', p);
       toast(`Règle ${rules.depensesMax}/${rules.projetsMax}/${rules.epargneMin} enregistrée.`, 'success');
       refresh();
@@ -1834,6 +1959,10 @@
         return go(el.dataset.view);
       case 'more': return openMoreMenu();
       case 'toggle-pwd': return togglePassword(el);
+      case 'toggle-alerts':
+        ui.showAllAlerts = !ui.showAllAlerts;
+        return renderView();
+      case 'refresh-rates': return refreshRates(true);
       case 'month':
         ui.month = F.shiftMonth(ui.month, Number(el.dataset.delta));
         return renderView();
@@ -1993,10 +2122,11 @@
     const form = t.closest('form[data-form=operation], form[data-form=recurring]');
     if (!form) return;
     if (t.name === 'type' || t.name === 'repeat') syncOperationForm(form);
-    if (t.name === 'account_id') {
+    if (t.name === 'account_id' && entryCurrency() === 'auto') {
       const acc = S.accounts.find((a) => a.id === t.value);
       if (acc && form.elements.currency) form.elements.currency.value = acc.currency;
     }
+    if (t.name === 'currency' || t.name === 'account_id') updateConvertHint(form);
   }
 
   let searchTimer;
@@ -2018,6 +2148,10 @@
     }
     const rulesForm = t.closest('form[data-form=rules]');
     if (rulesForm) updateRulesSum(rulesForm);
+    if (t.name === 'amount') {
+      const opForm = t.closest('form[data-form=operation], form[data-form=recurring]');
+      if (opForm) updateConvertHint(opForm);
+    }
   }
 
   function updateRulesSum(form) {

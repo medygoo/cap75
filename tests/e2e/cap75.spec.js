@@ -7,6 +7,63 @@ test.beforeEach(async ({ page }) => {
 
 const capValue = (page) => page.locator('.cap-figure .value');
 
+test.describe('Francs congolais et alertes', () => {
+  test('saisie en FC : conversion affichée en direct et comptée en dollars', async ({ page }) => {
+    await signUp(page);
+    await page.locator('.topbar').getByRole('button', { name: 'Nouvelle opération' }).click();
+    const d = page.getByRole('dialog');
+    await d.locator('label[for="t-Revenu"]').click();
+    await d.getByLabel('Devise').selectOption('CDF');
+    await d.getByLabel('Montant').fill('285000');
+    await expect(d.locator('[data-convert]')).toContainText('100,00');
+    await expect(d.locator('[data-convert]')).toContainText(/2\s850\sFC/);
+    await d.getByLabel('Catégorie').fill('Vente');
+    await d.getByRole('button', { name: "Ajouter l'opération" }).click();
+    await expect(capValue(page)).toHaveText(/100,00/);
+  });
+
+  test('devise de saisie par défaut : toujours CDF', async ({ page }) => {
+    await signUp(page);
+    await page.getByRole('button', { name: 'Paramètres' }).first().click();
+    await page.getByLabel('Devise de saisie').selectOption('CDF');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await page.locator('.topbar').getByRole('button', { name: 'Nouvelle opération' }).click();
+    await expect(page.getByRole('dialog').getByLabel('Devise')).toHaveValue('CDF');
+  });
+
+  test('le taux du jour est récupéré automatiquement', async ({ page }) => {
+    await useFakeBackend(page, { rates: { CDF: 2900, EUR: 0.9 } });
+    await signUp(page);
+    await page.getByRole('button', { name: 'Paramètres' }).first().click();
+    await expect(page.getByLabel('1 USD = … CDF')).toHaveValue('2900');
+    await expect(page.locator('.rate-status')).toContainText('automatique');
+  });
+
+  test('alertes en couleurs : loyer rouge, épargne orange', async ({ page }) => {
+    await signUp(page);
+    await addOperation(page, { type: 'Revenu', amount: 1000, category: 'Salaire' });
+    await addOperation(page, { type: 'Dépense', amount: 600, category: 'Loyer' });
+    const rent = page.locator('.alert.danger', { hasText: 'Alerte loyer' });
+    await expect(rent).toContainText('60 %');
+    await expect(page.locator('.alert.warning', { hasText: 'Épargne à renforcer' })).toBeVisible();
+    await expect(page.locator('.alert-count.danger')).toContainText('1 à corriger');
+    // Seuil réglable : loyer jusqu'à 70 % → plus d'alerte rouge
+    await page.getByRole('button', { name: 'Paramètres' }).first().click();
+    await page.getByLabel('Alerte loyer au-delà de (%)').fill('70');
+    await page.getByRole('button', { name: 'Enregistrer la règle' }).click();
+    await page.getByRole('button', { name: 'Tableau de bord' }).first().click();
+    await expect(page.locator('.alert', { hasText: 'Alerte loyer' })).toHaveCount(0);
+  });
+
+  test('alerte verte quand le cap est tenu', async ({ page }) => {
+    await signUp(page);
+    await addOperation(page, { type: 'Revenu', amount: 1000, category: 'Salaire' });
+    await addOperation(page, { type: 'Dépense', amount: 500, category: 'Alimentation' });
+    await addOperation(page, { type: 'Épargne', amount: 150, category: 'Épargne mensuelle' });
+    await expect(page.locator('.alert.success', { hasText: 'Cap tenu' })).toBeVisible();
+  });
+});
+
 test.describe('Compte et connexion', () => {
   test('inscription libre puis accès direct au tableau de bord', async ({ page }) => {
     await signUp(page, { name: 'Amani' });
@@ -217,7 +274,7 @@ test.describe('Comptes et devises', () => {
     await page.getByRole('button', { name: 'Paramètres' }).first().click();
     await page.getByLabel('Devise principale').selectOption('CDF');
     await page.getByLabel('1 USD = … CDF').fill('2800');
-    await page.getByRole('button', { name: 'Enregistrer les taux' }).click();
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
     await page.getByRole('button', { name: 'Tableau de bord' }).first().click();
     await expect(capValue(page)).toHaveText(/280\s?000 FC/);
   });
