@@ -1,5 +1,5 @@
 /* ============================================================
-   Cap75 — couche de données Supabase
+   CAP FIN — couche de données Supabase
    - Authentification (connexion, invitation, mot de passe oublié)
    - Chargement des tables de l'utilisateur (protégées par RLS)
    - Cache local pour l'usage hors ligne
@@ -181,7 +181,7 @@
     try {
       global.localStorage.setItem(key, JSON.stringify(value));
     } catch (err) {
-      console.warn('[Cap75] Cache local indisponible :', err && err.message);
+      console.warn('[CAP FIN] Cache local indisponible :', err && err.message);
     }
   }
 
@@ -360,7 +360,7 @@
         setQueue(q);
       }
     } catch (err) {
-      if (!isNetworkError(err)) console.error('[Cap75] Synchronisation :', err);
+      if (!isNetworkError(err)) console.error('[CAP FIN] Synchronisation :', err);
     } finally {
       flushing = false;
       emit('sync', { pending: getQueue().length, rejected });

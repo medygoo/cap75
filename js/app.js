@@ -1,5 +1,5 @@
 /* ============================================================
-   Cap75 — interface
+   CAP FIN — interface
    Écrans : connexion, tableau de bord, opérations, comptes,
    récurrences, projets, rapports, paramètres.
    Données : Cap75Data (Supabase + cache hors ligne)
@@ -111,7 +111,8 @@
   const icon = (name) =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ''}</svg>`;
 
-  const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#12b5a5"/><path d="M7 21a9 9 0 0 1 18 0" fill="none" stroke="#0e2a47" stroke-width="3" stroke-linecap="round"/><path d="M16 21l5-7" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="21" r="2.4" fill="#fff"/></svg>';
+  const LOGO = '<img class="brand-logo" src="./icons/logo-mark.png" alt="" width="32" height="32">';
+  const BRAND = LOGO + '<span class="brand-name">CAP <b>FIN</b></span>';
 
   const VIEWS = [
     { id: 'dashboard', label: 'Tableau de bord', short: 'Accueil', icon: 'dashboard', month: true, mobile: true },
@@ -292,7 +293,7 @@
         ui.authMode = 'new-password';
         renderAuth();
       } else if (session) {
-        if (D.urlAuth.type === 'signup') toast('Adresse e-mail confirmée. Bienvenue sur Cap75 !', 'success', 5000);
+        if (D.urlAuth.type === 'signup') toast('Adresse e-mail confirmée. Bienvenue sur CAP FIN !', 'success', 5000);
         await enterApp(session);
       } else {
         renderAuth();
@@ -320,12 +321,12 @@
           if (!w) return;
           w.addEventListener('statechange', () => {
             if (w.state === 'installed' && navigator.serviceWorker.controller) {
-              toast('Une nouvelle version de Cap75 est prête. Rechargez la page pour l’utiliser.', 'success', 8000);
+              toast('Une nouvelle version de CAP FIN est prête. Rechargez la page pour l’utiliser.', 'success', 8000);
             }
           });
         });
       })
-      .catch((err) => console.warn('[Cap75] Service worker :', err.message));
+      .catch((err) => console.warn('[CAP FIN] Service worker :', err.message));
   }
 
   function bindGlobalEvents() {
@@ -457,7 +458,7 @@
   function renderConfigMissing() {
     root().innerHTML = `
       <div class="splash"><div class="auth-card" style="max-width:520px;padding:24px">
-        <span class="brand-mark">${LOGO} Cap75</span>
+        <span class="brand-mark">${BRAND}</span>
         <h2>Connexion au serveur à configurer</h2>
         <p class="muted">Renseignez l'adresse du projet Supabase et sa clé publique dans <code>js/config.js</code>, puis rechargez la page.</p>
       </div></div>`;
@@ -466,7 +467,7 @@
   function renderFatal(message) {
     root().innerHTML = `
       <div class="splash"><div class="auth-card" style="padding:24px">
-        <span class="brand-mark">${LOGO} Cap75</span>
+        <span class="brand-mark">${BRAND}</span>
         <div class="notice error">${esc(message)}</div>
         <button class="btn" data-action="reload">Réessayer</button>
       </div></div>`;
@@ -539,10 +540,10 @@
     root().innerHTML = `
       <div class="auth">
         <section class="auth-brand">
-          <span class="brand-mark">${LOGO} Cap75</span>
+          <span class="brand-mark brand-lg">${BRAND}<small class="brand-by">By DOXTEHAD</small></span>
           <div>
-            <h1>Gardez le cap sur votre argent.</h1>
-            <p>75 % pour vivre, 15 % pour vos projets, 10 % mis de côté. Cap75 vous montre chaque mois où vous en êtes, compte par compte, en dollars comme en francs congolais.</p>
+            <h1>Cap vers une finance responsable.</h1>
+            <p>75 % pour vivre, 15 % pour vos projets, 10 % mis de côté. CAP FIN vous montre chaque mois où vous en êtes, compte par compte, en dollars comme en francs congolais.</p>
           </div>
           ${capPreview()}
         </section>
@@ -551,7 +552,7 @@
     enhancePasswords(root());
     const firstInput = $('.auth-card input');
     if (firstInput) firstInput.focus();
-    document.title = 'Cap75 · Budget 75/15/10';
+    document.title = 'CAP FIN · Cap vers une finance responsable';
   }
 
   function passwordProblem(pwd, confirm) {
@@ -570,7 +571,7 @@
     root().innerHTML = `
       <div class="app">
         <aside class="sidebar">
-          <span class="brand-mark">${LOGO} Cap75</span>
+          <span class="brand-mark">${BRAND}</span>
           <nav class="nav" aria-label="Navigation principale">
             ${VIEWS.map((v) => `<button class="nav-item" data-action="go" data-view="${v.id}">${icon(v.icon)}<span>${v.label}</span></button>`).join('')}
           </nav>
@@ -647,7 +648,7 @@
     el.innerHTML = renderers[v.id]();
     if (v.id === 'reports') drawHistoryChart();
     if (v.id === 'settings') enhancePasswords(el);
-    document.title = `${v.label} · Cap75`;
+    document.title = `${v.label} · CAP FIN`;
   }
 
   function updateSyncBadge() {
@@ -1177,7 +1178,7 @@
             <label class="field"><span>Type</span><select class="select" name="kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
             <label class="field"><span>Devise</span><select class="select" name="currency">${Object.keys(F.CURRENCIES).map((c) => `<option value="${c}" ${a.currency === c ? 'selected' : ''}>${c} · ${F.CURRENCIES[c].label}</option>`).join('')}</select></label>
           </div>
-          <label class="field"><span>Solde de départ</span><input class="input" type="number" step="0.01" name="opening_balance" value="${esc(a.opening_balance)}"><small>Ce qu'il y avait sur ce compte avant votre première opération dans Cap75.</small></label>
+          <label class="field"><span>Solde de départ</span><input class="input" type="number" step="0.01" name="opening_balance" value="${esc(a.opening_balance)}"><small>Ce qu'il y avait sur ce compte avant votre première opération dans CAP FIN.</small></label>
           <div class="modal-actions"><button type="button" class="btn btn-ghost" data-action="close-modal">Annuler</button><button class="btn" type="submit">${id ? 'Enregistrer' : 'Ajouter le compte'}</button></div>
         </form>
       </div>`);
@@ -1261,7 +1262,7 @@
       </section>
       <section class="panel">
         <div class="panel-head"><h2>Opérations récurrentes</h2><button class="btn" data-action="new-recurring">${icon('plus')} Ajouter</button>
-          <p>Salaire, loyer, abonnements, tontine… Cap75 les enregistre automatiquement à leur date, à chaque ouverture.</p></div>
+          <p>Salaire, loyer, abonnements, tontine… CAP FIN les enregistre automatiquement à leur date, à chaque ouverture.</p></div>
         ${list.length ? list.map((r) => {
           const next = F.upcomingDate(r, today());
           const paused = r.active === false;
@@ -1388,7 +1389,7 @@
             ${[['ALL', 'Tous'], ['En cours', 'En cours'], ['En pause', 'En pause'], ['Atteint', 'Atteints']].map(([v, l]) => `<option value="${v}" ${f === v ? 'selected' : ''}>${l}</option>`).join('')}
           </select>
           <button class="btn" data-action="new-project">${icon('plus')} Nouveau projet</button>
-          <p>Fixez un objectif chiffré et une échéance : Cap75 calcule combien mettre de côté chaque mois.</p></div>
+          <p>Fixez un objectif chiffré et une échéance : CAP FIN calcule combien mettre de côté chaque mois.</p></div>
         ${list.length ? `<div class="projects">${list.map(({ p, pr }) => `
           <article class="project">
             <div class="project-head">
@@ -1424,7 +1425,7 @@
           </div>
           <div class="row">
             <label class="field"><span>Objectif (${esc(base())})</span><input class="input" type="number" step="0.01" min="0.01" name="target" value="${esc(p.target)}" required></label>
-            <label class="field"><span>Déjà réuni avant Cap75</span><input class="input" type="number" step="0.01" min="0" name="initial_saved" value="${esc(p.initial_saved)}"></label>
+            <label class="field"><span>Déjà réuni avant CAP FIN</span><input class="input" type="number" step="0.01" min="0" name="initial_saved" value="${esc(p.initial_saved)}"></label>
           </div>
           <div class="row">
             <label class="field"><span>Échéance</span><input class="input" type="date" name="deadline" value="${esc(p.deadline || '')}"></label>
@@ -1631,7 +1632,7 @@
     const name = (S.profile && S.profile.display_name) || emailName();
     const verdict = t.revenus > 0 ? (rc.respected ? 'respectée' : 'non respectée') : 'sans revenus enregistrés';
     el.innerHTML = `
-      <h1>Cap75, rapport de ${esc(F.monthLabel(ui.month).toLowerCase())}</h1>
+      <h1>CAP FIN, rapport de ${esc(F.monthLabel(ui.month).toLowerCase())}</h1>
       <p class="sub">${esc(name)}. Édité le ${esc(new Date().toLocaleDateString('fr-FR'))}. Montants en ${esc(base())}.</p>
       <div class="kpis">
         <div>Revenus<strong>${fmt(t.revenus)}</strong></div>
@@ -1718,17 +1719,17 @@
           </form>
         </section>
         <section class="panel">
-          <div class="panel-head"><h2>Sauvegarde et import</h2><p>Gardez une copie de vos données, ou importez un ancien carnet (fichier JSON du carnet DOXTEHAD v1 ou v2, ou une sauvegarde Cap75).</p></div>
+          <div class="panel-head"><h2>Sauvegarde et import</h2><p>Gardez une copie de vos données, ou importez un ancien carnet (fichier JSON du carnet DOXTEHAD v1 ou v2, ou une sauvegarde CAP FIN).</p></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn btn-ghost" data-action="export-json">${icon('download')} Télécharger une sauvegarde</button>
             <label class="btn btn-ghost" style="cursor:pointer">${icon('upload')} Importer un fichier JSON<input type="file" accept=".json,application/json" data-action="import-json" hidden></label>
           </div>
         </section>
         <section class="panel">
-          <div class="panel-head"><h2>Application</h2><p>Installez Cap75 sur votre téléphone ou votre ordinateur pour l'ouvrir comme une appli, même sans connexion.</p></div>
+          <div class="panel-head"><h2>Application</h2><p>Installez CAP FIN sur votre téléphone ou votre ordinateur pour l'ouvrir comme une appli, même sans connexion.</p></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-accent" data-action="install" id="install-btn" ${window.__cap75Install ? '' : 'hidden'}>Installer Cap75</button>
-            <span class="muted" style="font-size:13px">${installed ? 'Cap75 est installée sur cet appareil.' : 'Sur téléphone : menu du navigateur, puis « Ajouter à l’écran d’accueil ».'}</span>
+            <button class="btn btn-accent" data-action="install" id="install-btn" ${window.__cap75Install ? '' : 'hidden'}>Installer CAP FIN</button>
+            <span class="muted" style="font-size:13px">${installed ? 'CAP FIN est installée sur cet appareil.' : 'Sur téléphone : menu du navigateur, puis « Ajouter à l’écran d’accueil ».'}</span>
           </div>
         </section>
       </div>`;
@@ -1832,13 +1833,13 @@
       toast('Aucune opération à exporter.', 'warning');
       return;
     }
-    download(F.toCSV(ops, { accounts: S.accounts, projects: S.projects, profile: S.profile }), `cap75-operations-${label}.csv`, 'text/csv;charset=utf-8');
+    download(F.toCSV(ops, { accounts: S.accounts, projects: S.projects, profile: S.profile }), `capfin-operations-${label}.csv`, 'text/csv;charset=utf-8');
     toast(`${ops.length} opération(s) exportée(s).`, 'success');
   }
 
   function exportJSON() {
     const data = {
-      app: 'Cap75',
+      app: 'CAP FIN',
       version: 3,
       exported_at: new Date().toISOString(),
       profile: { base_currency: S.profile.base_currency, rates: S.profile.rates, rules: S.profile.rules },
@@ -1847,7 +1848,7 @@
       recurring: S.recurring,
       operations: S.operations
     };
-    download(JSON.stringify(data, null, 2), `cap75-sauvegarde-${today()}.json`, 'application/json');
+    download(JSON.stringify(data, null, 2), `capfin-sauvegarde-${today()}.json`, 'application/json');
     toast('Sauvegarde téléchargée.', 'success');
   }
 
@@ -1868,7 +1869,7 @@
         toast("Ce fichier n'est pas un JSON lisible.", 'error');
         return;
       }
-      const plan = data && data.app === 'Cap75' ? planCap75Import(data) : planLegacyImport(data);
+      const plan = data && (data.app === 'CAP FIN' || data.app === 'Cap75') ? planCap75Import(data) : planLegacyImport(data);
       if (plan.error) {
         toast(plan.error, 'error', 7000);
         return;
@@ -1906,7 +1907,7 @@
 
   function planCap75Import(data) {
     const lists = ['accounts', 'projects', 'recurring', 'operations'];
-    if (!lists.every((k) => Array.isArray(data[k]))) return { error: 'Sauvegarde Cap75 incomplète.' };
+    if (!lists.every((k) => Array.isArray(data[k]))) return { error: 'Sauvegarde CAP FIN incomplète.' };
     // Nouveaux identifiants pour éviter tout conflit avec les données existantes
     const map = new Map();
     const newId = (old) => {
@@ -2168,7 +2169,7 @@
   });
   window.addEventListener('appinstalled', () => {
     window.__cap75Install = null;
-    toast('Cap75 est installée sur cet appareil.', 'success');
+    toast('CAP FIN est installée sur cet appareil.', 'success');
   });
 
   // Point d'accès pour les tests

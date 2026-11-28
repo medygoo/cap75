@@ -1,5 +1,5 @@
 /* ============================================================
-   Cap75 — moteur de calcul (fonctions pures, sans DOM ni réseau)
+   CAP FIN — moteur de calcul (fonctions pures, sans DOM ni réseau)
    Montants : chaque opération garde sa devise ; les totaux sont
    convertis dans la devise principale avec les taux de l'utilisateur.
    Taux : unités de devise pour 1 USD (ex. { USD: 1, CDF: 2850, EUR: 0.92 }).

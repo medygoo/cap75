@@ -1,6 +1,6 @@
 {
   "name": "cap75",
-  "version": "3.0.0",
+  "version": "3.4.0",
   "description": "Cap75 — PWA de budget 75/15/10 (comptes, devises USD/CDF/EUR, récurrences, projets) avec comptes Supabase",
   "type": "module",
   "private": true,

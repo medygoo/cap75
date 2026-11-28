@@ -1,4 +1,6 @@
-# Cap75 — budget 75 / 15 / 10
+# CAP FIN — by DOXTEHAD
+
+*Cap vers une finance responsable.* Budget 75 / 15 / 10 (anciennement Cap75).
 
 Application web installable (PWA) pour tenir son budget avec la règle **75 / 15 / 10** :
 75 % maximum pour les dépenses, 15 % pour les projets, 10 % minimum d'épargne.
@@ -63,7 +65,7 @@ Application web installable (PWA) pour tenir son budget avec la règle **75 / 15
 
 Tout se fait dans **Authentication → Users** du tableau de bord Supabase :
 voir les inscrits, inviter quelqu'un par e-mail (*Invite user*), bloquer ou supprimer un compte.
-Supprimer un utilisateur efface aussi toutes ses données Cap75.
+Supprimer un utilisateur efface aussi toutes ses données CAP FIN.
 
 ## Développement
 
@@ -98,3 +100,5 @@ Chaque envoi sur `main` lance les tests ; l’ancienne adresse GitHub Pages redi
 - v1 : fichier HTML unique (`legacy/`), données dans le navigateur, mot de passe faible.
 - v2 : PWA locale (mot de passe PBKDF2, tests), interface partiellement cassée (31 % des classes CSS manquantes).
 - v3 (Cap75) : comptes Supabase, interface refaite, comptes d'argent, devises, récurrences, historique, exports.
+- v3.4 : nouvelle identité CAP FIN by DOXTEHAD (nom, logo, icônes, couleurs bleu marine et or).
+- Icônes : `npm run icons` les régénère depuis `branding/capfin-logo.jpg`.

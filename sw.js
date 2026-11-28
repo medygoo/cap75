@@ -1,12 +1,12 @@
 ﻿/* ============================================================
-   Cap75 — service worker
+   CAP FIN — service worker
    - Coquille de l'appli (HTML, CSS, JS, icônes) en cache : l'appli
      s'ouvre même sans réseau.
    - Les appels à Supabase ne sont jamais mis en cache : les données
      hors ligne sont gérées par l'appli (cache local + file d'attente).
    ============================================================ */
 
-const VERSION = 'cap75-v3.3.1';
+const VERSION = 'cap75-v3.4.0';
 const SHELL = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ const SHELL = [
   './js/data.js',
   './js/app.js',
   // Les grandes icônes (512 px) ne servent qu'à l'installation : pas de préchargement
-  './icons/icon.svg',
+  './icons/logo-mark.png',
   './icons/icon-192.png',
   './icons/favicon.ico'
 ];

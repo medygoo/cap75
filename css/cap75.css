@@ -1,13 +1,13 @@
 /* ============================================================
-   Cap75 — feuille de style (aucune dépendance, 100 % hors ligne)
+   CAP FIN — feuille de style (aucune dépendance, 100 % hors ligne)
    Une couleur fixe par type d'opération, partout dans l'appli :
    Revenu vert, Dépense corail, Projet bleu, Épargne or.
    ============================================================ */
 
 :root {
-  --ink: #0e2a47;
-  --ink-2: #163a5f;
-  --ink-3: #2a5079;
+  --ink: #0c2e53;
+  --ink-2: #14406d;
+  --ink-3: #2a5583;
   --bg: #f3f6f9;
   --surface: #ffffff;
   --surface-2: #f8fafc;
@@ -28,9 +28,9 @@
   --transfer: #6b7a8c;
   --transfer-soft: #edf0f4;
 
-  --accent: #12b5a5;
-  --accent-2: #0b8f83;
-  --accent-soft: #dcf6f3;
+  --accent: #e2b13c;
+  --accent-2: #94690e;
+  --accent-soft: #fbf3dc;
   --violet: #6d5bd0;
   --violet-soft: #ece9fb;
 
@@ -78,7 +78,7 @@ a { color: var(--proj); }
 .btn:hover { background: var(--ink-2); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn svg { width: 16px; height: 16px; flex: none; }
-.btn-accent { background: var(--accent); color: #05302c; }
+.btn-accent { background: var(--accent); color: var(--ink); }
 .btn-accent:hover { background: #19c7b6; }
 .btn-ghost { background: transparent; color: var(--text); border-color: var(--line-2); }
 .btn-ghost:hover { background: var(--surface-2); }
@@ -179,7 +179,14 @@ a { color: var(--proj); }
 
 /* ---------------- Marque ---------------- */
 .brand-mark { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
-.brand-mark svg { width: 30px; height: 30px; flex: none; }
+.brand-mark { flex-wrap: wrap; }
+.brand-logo { width: 32px; height: 32px; flex: none; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+.brand-name { font-weight: 800; letter-spacing: 0.04em; }
+.brand-name b { color: var(--accent); font-weight: 800; }
+.brand-by { flex-basis: 100%; padding-left: 42px; margin-top: -6px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--accent); }
+.brand-lg { font-size: 24px; }
+.brand-lg .brand-logo { width: 46px; height: 46px; border-radius: 11px; }
+.brand-lg .brand-by { padding-left: 56px; font-size: 12px; }
 
 /* ---------------- Connexion ---------------- */
 .auth { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); }

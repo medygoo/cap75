@@ -318,7 +318,7 @@ test.describe('Projets', () => {
     const d = page.getByRole('dialog');
     await d.getByLabel('Nom du projet').fill('Moto');
     await d.getByLabel(/Objectif/).fill('1000');
-    await d.getByLabel('Déjà réuni avant Cap75').fill('200');
+    await d.getByLabel('Déjà réuni avant CAP FIN').fill('200');
     await d.getByRole('button', { name: 'Créer le projet' }).click();
     await expect(page.locator('.project')).toContainText('20 %');
 
@@ -341,11 +341,11 @@ test.describe('Rapports, exports et import', () => {
     await expect(page.locator('.bars').first()).toContainText('Loyer');
 
     const [csv] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'CSV du mois' }).click()]);
-    expect(csv.suggestedFilename()).toMatch(/^cap75-operations-\d{4}-\d{2}\.csv$/);
+    expect(csv.suggestedFilename()).toMatch(/^capfin-operations-\d{4}-\d{2}\.csv$/);
 
     await page.getByRole('button', { name: 'Paramètres' }).first().click();
     const [json] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Télécharger une sauvegarde' }).click()]);
-    expect(json.suggestedFilename()).toMatch(/^cap75-sauvegarde-.*\.json$/);
+    expect(json.suggestedFilename()).toMatch(/^capfin-sauvegarde-.*\.json$/);
   });
 
   test('importer un ancien carnet DOXTEHAD (JSON v1/v2)', async ({ page }) => {
